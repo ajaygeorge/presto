@@ -99,6 +99,11 @@ public class Query
         System.out.println("Dummy1");
     }
 
+    public void dummy2()
+    {
+        System.out.println("Dummy2");
+    }
+
     @Override
     public List<Node> getChildren()
     {
