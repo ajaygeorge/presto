@@ -94,6 +94,11 @@ public class Query
         return visitor.visitQuery(this, context);
     }
 
+    public void dummy1()
+    {
+        System.out.println("Dummy1");
+    }
+
     @Override
     public List<Node> getChildren()
     {
