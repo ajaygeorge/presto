@@ -124,6 +124,11 @@ public class Query
         System.out.println("Dummy6");
     }
 
+    public void dummy7()
+    {
+        System.out.println("Dummy7");
+    }
+
     @Override
     public List<Node> getChildren()
     {
