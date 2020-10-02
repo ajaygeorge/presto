@@ -46,6 +46,12 @@ public final class TransactionId
         return new TransactionId(UUID.fromString(value));
     }
 
+    @ThriftConstructor
+    public TransactionId(String value)
+    {
+        this.uuid = UUID.fromString(value);
+    }
+
     @Override
     public int hashCode()
     {
@@ -67,6 +73,7 @@ public final class TransactionId
 
     @Override
     @JsonValue
+    @ThriftField(value = 1, name = "value")
     public String toString()
     {
         return uuid.toString();

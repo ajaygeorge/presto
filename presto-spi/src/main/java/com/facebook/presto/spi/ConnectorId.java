@@ -33,6 +33,7 @@ public final class ConnectorId
 
     @ThriftConstructor
     @JsonCreator
+    @ThriftConstructor
     public ConnectorId(String catalogName)
     {
         this.catalogName = requireNonNull(catalogName, "catalogName is null");
@@ -67,6 +68,7 @@ public final class ConnectorId
     }
 
     @JsonValue
+    @ThriftField(value = 1, name = "catalogName")
     @Override
     public String toString()
     {

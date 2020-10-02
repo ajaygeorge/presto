@@ -14,6 +14,9 @@
 
 package com.facebook.presto.execution.scheduler;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftField;
+import com.facebook.drift.annotations.ThriftStruct;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.predicate.TupleDomain;
 import com.facebook.presto.metadata.AnalyzeTableHandle;
@@ -52,6 +55,7 @@ import static com.google.common.graph.Traverser.forTree;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
+@ThriftStruct
 public class TableWriteInfo
 {
     private final Optional<ExecutionWriterTarget> writerTarget;
@@ -59,6 +63,7 @@ public class TableWriteInfo
     private final Optional<DeleteScanInfo> deleteScanInfo;
 
     @JsonCreator
+    @ThriftConstructor
     public TableWriteInfo(
             @JsonProperty("writerTarget") Optional<ExecutionWriterTarget> writerTarget,
             @JsonProperty("analyzeTableHandle") Optional<AnalyzeTableHandle> analyzeTableHandle,
@@ -181,29 +186,34 @@ public class TableWriteInfo
     }
 
     @JsonProperty
+    @ThriftField(1)
     public Optional<ExecutionWriterTarget> getWriterTarget()
     {
         return writerTarget;
     }
 
     @JsonProperty
+    @ThriftField(2)
     public Optional<AnalyzeTableHandle> getAnalyzeTableHandle()
     {
         return analyzeTableHandle;
     }
 
     @JsonProperty
+    @ThriftField(3)
     public Optional<DeleteScanInfo> getDeleteScanInfo()
     {
         return deleteScanInfo;
     }
 
+    @ThriftStruct
     public static class DeleteScanInfo
     {
         private final PlanNodeId id;
         private final TableHandle tableHandle;
 
         @JsonCreator
+        @ThriftConstructor
         public DeleteScanInfo(@JsonProperty("id") PlanNodeId id, @JsonProperty("tableHandle") TableHandle tableHandle)
         {
             this.id = id;
@@ -211,12 +221,14 @@ public class TableWriteInfo
         }
 
         @JsonProperty
+        @ThriftField(1)
         public PlanNodeId getId()
         {
             return id;
         }
 
         @JsonProperty
+        @ThriftField(2)
         public TableHandle getTableHandle()
         {
             return tableHandle;
