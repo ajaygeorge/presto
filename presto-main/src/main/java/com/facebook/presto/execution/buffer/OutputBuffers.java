@@ -14,6 +14,8 @@
 package com.facebook.presto.execution.buffer;
 
 import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftEnum;
+import com.facebook.drift.annotations.ThriftEnumValue;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftStruct;
 import com.facebook.presto.sql.planner.PartitioningHandle;
@@ -39,6 +41,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 
+@ThriftStruct
 public final class OutputBuffers
 {
     public static final int BROADCAST_PARTITION_ID = 0;
@@ -69,12 +72,19 @@ public final class OutputBuffers
         return DISCARDING_OUTPUT_BUFFERS;
     }
 
+    @ThriftEnum
     public enum BufferType
     {
         PARTITIONED,
         BROADCAST,
         ARBITRARY,
-        DISCARDING,
+        DISCARDING;
+
+        @ThriftEnumValue
+        public int getValue()
+        {
+            return ordinal();
+        }
     }
 
     private final BufferType type;
@@ -84,6 +94,7 @@ public final class OutputBuffers
 
     // Visible only for Jackson... Use the "with" methods instead
     @JsonCreator
+    @ThriftConstructor
     public OutputBuffers(
             @JsonProperty("type") BufferType type,
             @JsonProperty("version") long version,
@@ -97,24 +108,28 @@ public final class OutputBuffers
     }
 
     @JsonProperty
+    @ThriftField(1)
     public BufferType getType()
     {
         return type;
     }
 
     @JsonProperty
+    @ThriftField(2)
     public long getVersion()
     {
         return version;
     }
 
     @JsonProperty
+    @ThriftField(3)
     public boolean isNoMoreBufferIds()
     {
         return noMoreBufferIds;
     }
 
     @JsonProperty
+    @ThriftField(4)
     public Map<OutputBufferId, Integer> getBuffers()
     {
         return buffers;

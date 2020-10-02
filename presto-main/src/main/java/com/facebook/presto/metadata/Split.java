@@ -13,6 +13,9 @@
  */
 package com.facebook.presto.metadata;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftField;
+import com.facebook.drift.annotations.ThriftStruct;
 import com.facebook.presto.execution.Lifespan;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.ConnectorSplit;
@@ -30,6 +33,7 @@ import static com.facebook.presto.spi.SplitContext.NON_CACHEABLE;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
+@ThriftStruct
 public final class Split
 {
     private final ConnectorId connectorId;
@@ -45,6 +49,7 @@ public final class Split
     }
 
     @JsonCreator
+    @ThriftConstructor
     public Split(
             @JsonProperty("connectorId") ConnectorId connectorId,
             @JsonProperty("transactionHandle") ConnectorTransactionHandle transactionHandle,
@@ -60,30 +65,35 @@ public final class Split
     }
 
     @JsonProperty
+    @ThriftField(1)
     public ConnectorId getConnectorId()
     {
         return connectorId;
     }
 
     @JsonProperty
+    @ThriftField(2)
     public ConnectorTransactionHandle getTransactionHandle()
     {
         return transactionHandle;
     }
 
     @JsonProperty
+    @ThriftField(3)
     public ConnectorSplit getConnectorSplit()
     {
         return connectorSplit;
     }
 
     @JsonProperty
+    @ThriftField(4)
     public Lifespan getLifespan()
     {
         return lifespan;
     }
 
     @JsonProperty
+    @ThriftField(5)
     public SplitContext getSplitContext()
     {
         return splitContext;
