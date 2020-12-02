@@ -13,9 +13,9 @@
  */
 package com.facebook.presto.testing;
 
-import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 
 import java.util.Objects;
 import java.util.UUID;
