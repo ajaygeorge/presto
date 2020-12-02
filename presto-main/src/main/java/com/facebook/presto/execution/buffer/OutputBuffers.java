@@ -74,7 +74,6 @@ public final class OutputBuffers
         return DISCARDING_OUTPUT_BUFFERS;
     }
 
-
     public static OutputBuffers createSpoolingOutputBuffers()
     {
         return SPOOLING_OUTPUT_BUFFERS;

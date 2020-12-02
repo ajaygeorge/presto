@@ -33,7 +33,6 @@ public final class ConnectorId
 
     @ThriftConstructor
     @JsonCreator
-    @ThriftConstructor
     public ConnectorId(String catalogName)
     {
         this.catalogName = requireNonNull(catalogName, "catalogName is null");

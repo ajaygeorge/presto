@@ -13,6 +13,9 @@
  */
 package com.facebook.presto.testing;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftField;
+import com.facebook.drift.annotations.ThriftStruct;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,12 +26,14 @@ import java.util.UUID;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
+@ThriftStruct
 public class TestingTransactionHandle
         implements ConnectorTransactionHandle
 {
     private final UUID uuid;
 
     @JsonCreator
+    @ThriftConstructor
     public TestingTransactionHandle(
             @JsonProperty("uuid") UUID uuid)
     {
@@ -41,6 +46,7 @@ public class TestingTransactionHandle
     }
 
     @JsonProperty
+    @ThriftField(1)
     public UUID getUuid()
     {
         return uuid;
