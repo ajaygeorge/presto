@@ -23,6 +23,10 @@ import com.facebook.presto.spi.session.PropertyMetadata;
 import com.facebook.presto.sql.analyzer.SemanticException;
 import com.facebook.presto.testing.MaterializedResult;
 import com.facebook.presto.testing.MaterializedRow;
+import com.facebook.presto.tests.sqllogictest.SqlLogicTest;
+import com.facebook.presto.tests.sqllogictest.SqlLogicTestConfig;
+import com.facebook.presto.tests.sqllogictest.SqlLogicTestResult;
+import com.facebook.presto.tests.sqllogictest.SqlLogicTestStatement;
 import com.facebook.presto.type.SqlIntervalDayTime;
 import com.facebook.presto.type.SqlIntervalYearMonth;
 import com.google.common.collect.ArrayListMultimap;
@@ -151,6 +155,13 @@ public abstract class AbstractTestQueries
     public void testParsingError()
     {
         assertQueryFails("SELECT foo FROM", "line 1:16: mismatched input '<EOF>'. Expecting: .*");
+    }
+
+    @Test
+    public void testSQLTestLogic() throws Exception
+    {
+        SqlLogicTest sqlLogicTest = new SqlLogicTest(new SqlLogicTestConfig());
+        sqlLogicTest.run(this);
     }
 
     @Test

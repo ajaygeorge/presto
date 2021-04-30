@@ -120,7 +120,7 @@ public abstract class AbstractTestQueryFramework
         return queryRunner.getNodeCount();
     }
 
-    protected MaterializedResult computeActual(@Language("SQL") String sql)
+    public MaterializedResult computeActual(@Language("SQL") String sql)
     {
         return computeActual(getSession(), sql);
     }
@@ -237,7 +237,7 @@ public abstract class AbstractTestQueryFramework
         QueryAssertions.assertQueryFailsEventually(queryRunner, getSession(), sql, expectedMessageRegExp, timeout);
     }
 
-    protected void assertQueryFails(@Language("SQL") String sql, @Language("RegExp") String expectedMessageRegExp)
+    public void assertQueryFails(@Language("SQL") String sql, @Language("RegExp") String expectedMessageRegExp)
     {
         QueryAssertions.assertQueryFails(queryRunner, getSession(), sql, expectedMessageRegExp);
     }

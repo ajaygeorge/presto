@@ -81,7 +81,7 @@ public class TestQueryPlanDeterminism
     }
 
     @Override
-    protected MaterializedResult computeActual(@Language("SQL") String sql)
+    public MaterializedResult computeActual(@Language("SQL") String sql)
     {
         determinismChecker.checkPlanIsDeterministic(sql);
         return super.computeActual(sql);
@@ -173,7 +173,7 @@ public class TestQueryPlanDeterminism
     }
 
     @Override
-    protected void assertQueryFails(@Language("SQL") String sql, @Language("RegExp") String expectedMessageRegExp)
+    public void assertQueryFails(@Language("SQL") String sql, @Language("RegExp") String expectedMessageRegExp)
     {
         super.assertQueryFails(sql, expectedMessageRegExp);
     }
