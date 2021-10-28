@@ -138,12 +138,10 @@ public class TestChecksumValidator
                         ", \"checksum\"(\"map_array\") \"map_array$checksum\"\n" +
                         ", \"checksum\"(\"cardinality\"(\"map_array\")) \"map_array$cardinality_checksum\"\n" +
                         ", COALESCE(\"sum\"(\"cardinality\"(\"map_array\")), 0) \"map_array$cardinality_sum\"\n" +
-                        ", \"checksum\"(\"map\") \"map$checksum\"\n" +
                         ", \"checksum\"(\"array_sort\"(\"map_keys\"(\"map\"))) \"map$keys_checksum\"\n" +
                         ", COALESCE(\"checksum\"(TRY(\"array_sort\"(\"map_values\"(\"map\")))), \"checksum\"(\"map_values\"(\"map\"))) \"map$values_checksum\"\n" +
                         ", \"checksum\"(\"cardinality\"(\"map\")) \"map$cardinality_checksum\"\n" +
                         ", COALESCE(\"sum\"(\"cardinality\"(\"map\")), 0) \"map$cardinality_sum\"\n" +
-                        ", \"checksum\"(\"map_non_orderable\") \"map_non_orderable$checksum\"\n" +
                         ", \"checksum\"(\"map_keys\"(\"map_non_orderable\")) \"map_non_orderable$keys_checksum\"\n" +
                         ", \"checksum\"(\"map_values\"(\"map_non_orderable\")) \"map_non_orderable$values_checksum\"\n" +
                         ", \"checksum\"(\"cardinality\"(\"map_non_orderable\")) \"map_non_orderable$cardinality_checksum\"\n" +
@@ -389,7 +387,6 @@ public class TestChecksumValidator
         ChecksumResult controlChecksum = new ChecksumResult(
                 5,
                 ImmutableMap.<String, Object>builder()
-                        .put("map$checksum", new SqlVarbinary(new byte[] {0xa}))
                         .put("map$keys_checksum", new SqlVarbinary(new byte[] {0xb}))
                         .put("map$values_checksum", new SqlVarbinary(new byte[] {0xc}))
                         .put("map$cardinality_sum", 3L)
@@ -399,23 +396,10 @@ public class TestChecksumValidator
         // Matched
         assertTrue(checksumValidator.getMismatchedColumns(columns, controlChecksum, controlChecksum).isEmpty());
 
-        // Mismatched map checksum
+        // Mismatched keys checksum
         ChecksumResult testChecksum = new ChecksumResult(
                 5,
                 ImmutableMap.<String, Object>builder()
-                        .put("map$checksum", new SqlVarbinary(new byte[] {0x1a}))
-                        .put("map$keys_checksum", new SqlVarbinary(new byte[] {0xb}))
-                        .put("map$values_checksum", new SqlVarbinary(new byte[] {0xc}))
-                        .put("map$cardinality_sum", 3L)
-                        .put("map$cardinality_checksum", new SqlVarbinary(new byte[] {0xd}))
-                        .build());
-        assertMismatchedColumns(columns, controlChecksum, testChecksum, MAP_COLUMN);
-
-        // Mismatched keys checksum
-        testChecksum = new ChecksumResult(
-                5,
-                ImmutableMap.<String, Object>builder()
-                        .put("map$checksum", new SqlVarbinary(new byte[] {0xa}))
                         .put("map$keys_checksum", new SqlVarbinary(new byte[] {0x1b}))
                         .put("map$values_checksum", new SqlVarbinary(new byte[] {0xc}))
                         .put("map$cardinality_checksum", new SqlVarbinary(new byte[] {0xd}))
@@ -427,7 +411,6 @@ public class TestChecksumValidator
         testChecksum = new ChecksumResult(
                 5,
                 ImmutableMap.<String, Object>builder()
-                        .put("map$checksum", new SqlVarbinary(new byte[] {0xa}))
                         .put("map$keys_checksum", new SqlVarbinary(new byte[] {0xb}))
                         .put("map$values_checksum", new SqlVarbinary(new byte[] {0x1c}))
                         .put("map$cardinality_checksum", new SqlVarbinary(new byte[] {0xd}))
@@ -439,7 +422,6 @@ public class TestChecksumValidator
         testChecksum = new ChecksumResult(
                 5,
                 ImmutableMap.<String, Object>builder()
-                        .put("map$checksum", new SqlVarbinary(new byte[] {0xa}))
                         .put("map$keys_checksum", new SqlVarbinary(new byte[] {0xb}))
                         .put("map$values_checksum", new SqlVarbinary(new byte[] {0xc}))
                         .put("map$cardinality_checksum", new SqlVarbinary(new byte[] {0x1d}))
@@ -451,7 +433,6 @@ public class TestChecksumValidator
         testChecksum = new ChecksumResult(
                 5,
                 ImmutableMap.<String, Object>builder()
-                        .put("map$checksum", new SqlVarbinary(new byte[] {0xa}))
                         .put("map$keys_checksum", new SqlVarbinary(new byte[] {0xb}))
                         .put("map$values_checksum", new SqlVarbinary(new byte[] {0xc}))
                         .put("map$cardinality_checksum", new SqlVarbinary(new byte[] {0xd}))

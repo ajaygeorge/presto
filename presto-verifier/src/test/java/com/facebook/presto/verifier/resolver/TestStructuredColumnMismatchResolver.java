@@ -64,12 +64,12 @@ public class TestStructuredColumnMismatchResolver
     @Test
     public void testResolveMap()
     {
-        MapColumnChecksum checksum1 = new MapColumnChecksum(binary(0x1), binary(0xa), binary(0xa), binary(0xc), 1);
-        MapColumnChecksum checksum2 = new MapColumnChecksum(binary(0x2), binary(0xa), binary(0xb), binary(0xc), 1);
-        MapColumnChecksum checksum3 = new MapColumnChecksum(binary(0x3), binary(0xb), binary(0xa), binary(0xc), 1);
-        MapColumnChecksum checksum4 = new MapColumnChecksum(binary(0x4), binary(0xb), binary(0xb), binary(0xc), 1);
-        MapColumnChecksum checksum5 = new MapColumnChecksum(binary(0x5), binary(0xb), binary(0xb), binary(0x1c), 1);
-        MapColumnChecksum checksum6 = new MapColumnChecksum(binary(0x5), binary(0xb), binary(0xb), binary(0xc), 2);
+        MapColumnChecksum checksum1 = new MapColumnChecksum(binary(0xa), binary(0xa), binary(0xc), 1);
+        MapColumnChecksum checksum2 = new MapColumnChecksum(binary(0xa), binary(0xb), binary(0xc), 1);
+        MapColumnChecksum checksum3 = new MapColumnChecksum(binary(0xb), binary(0xa), binary(0xc), 1);
+        MapColumnChecksum checksum4 = new MapColumnChecksum(binary(0xb), binary(0xb), binary(0xc), 1);
+        MapColumnChecksum checksum5 = new MapColumnChecksum(binary(0xb), binary(0xb), binary(0x1c), 1);
+        MapColumnChecksum checksum6 = new MapColumnChecksum(binary(0xb), binary(0xb), binary(0xc), 2);
 
         // resolved
         assertResolved(createMismatchedColumn(mapType(REAL, DOUBLE), checksum1, checksum4));
@@ -109,8 +109,8 @@ public class TestStructuredColumnMismatchResolver
                 new ArrayColumnChecksum(binary(0xb), binary(0xc), 1));
         ColumnMatchResult<?> resolvable2 = createMismatchedColumn(
                 mapType(REAL, DOUBLE),
-                new MapColumnChecksum(binary(0x1), binary(0xa), binary(0xa), binary(0xc), 1),
-                new MapColumnChecksum(binary(0x4), binary(0xb), binary(0xb), binary(0xc), 1));
+                new MapColumnChecksum(binary(0xa), binary(0xa), binary(0xc), 1),
+                new MapColumnChecksum(binary(0xb), binary(0xb), binary(0xc), 1));
         ColumnMatchResult<?> nonResolvable = createMismatchedColumn(VARCHAR, new SimpleColumnChecksum(binary(0xa)), new SimpleColumnChecksum(binary(0xb)));
 
         assertResolved(resolvable1, resolvable2);

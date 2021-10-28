@@ -22,30 +22,21 @@ import static java.lang.String.format;
 public class MapColumnChecksum
         extends StructureColumnChecksum
 {
-    private final Object checksum;
     private final Object keysChecksum;
     private final Object valuesChecksum;
     private final Object cardinalityChecksum;
     private final long cardinalitySum;
 
     public MapColumnChecksum(
-            @Nullable Object checksum,
             @Nullable Object keysChecksum,
             @Nullable Object valuesChecksum,
             @Nullable Object cardinalityChecksum,
             long cardinalitySum)
     {
-        this.checksum = checksum;
         this.keysChecksum = keysChecksum;
         this.valuesChecksum = valuesChecksum;
         this.cardinalityChecksum = cardinalityChecksum;
         this.cardinalitySum = cardinalitySum;
-    }
-
-    @Nullable
-    public Object getChecksum()
-    {
-        return checksum;
     }
 
     @Nullable
@@ -83,8 +74,7 @@ public class MapColumnChecksum
             return false;
         }
         MapColumnChecksum o = (MapColumnChecksum) obj;
-        return Objects.equals(checksum, o.checksum) &&
-                Objects.equals(keysChecksum, o.keysChecksum) &&
+        return Objects.equals(keysChecksum, o.keysChecksum) &&
                 Objects.equals(valuesChecksum, o.valuesChecksum) &&
                 Objects.equals(cardinalityChecksum, o.cardinalityChecksum) &&
                 Objects.equals(cardinalitySum, o.cardinalitySum);
@@ -93,12 +83,12 @@ public class MapColumnChecksum
     @Override
     public int hashCode()
     {
-        return Objects.hash(checksum, keysChecksum, valuesChecksum, cardinalityChecksum, cardinalitySum);
+        return Objects.hash(keysChecksum, valuesChecksum, cardinalityChecksum, cardinalitySum);
     }
 
     @Override
     public String toString()
     {
-        return format("checksum: %s, keys_checksum: %s, values_checksum: %s, cardinality_checksum: %s, cardinality_sum: %s", checksum, keysChecksum, valuesChecksum, cardinalityChecksum, cardinalitySum);
+        return format("keys_checksum: %s, values_checksum: %s, cardinality_checksum: %s, cardinality_sum: %s", keysChecksum, valuesChecksum, cardinalityChecksum, cardinalitySum);
     }
 }

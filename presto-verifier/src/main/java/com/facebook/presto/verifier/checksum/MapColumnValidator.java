@@ -42,7 +42,6 @@ public class MapColumnValidator
         Type keyType = ((MapType) column.getType()).getKeyType();
         Type valueType = ((MapType) column.getType()).getValueType();
 
-        Expression checksum = functionCall("checksum", column.getExpression());
         Expression keysChecksum = generateArrayChecksum(functionCall("map_keys", column.getExpression()), new ArrayType(keyType));
         Expression valuesChecksum = generateArrayChecksum(functionCall("map_values", column.getExpression()), new ArrayType(valueType));
         Expression mapCardinalityChecksum = functionCall("checksum", functionCall("cardinality", column.getExpression()));
@@ -51,7 +50,6 @@ public class MapColumnValidator
                 new LongLiteral("0"));
 
         return ImmutableList.of(
-                new SingleColumn(checksum, Optional.of(delimitedIdentifier(getChecksumColumnAlias(column)))),
                 new SingleColumn(keysChecksum, Optional.of(delimitedIdentifier(getKeysChecksumColumnAlias(column)))),
                 new SingleColumn(valuesChecksum, Optional.of(delimitedIdentifier(getValuesChecksumColumnAlias(column)))),
                 new SingleColumn(mapCardinalityChecksum, Optional.of(delimitedIdentifier(getCardinalityChecksumColumnAlias(column)))),
@@ -70,7 +68,6 @@ public class MapColumnValidator
     private static MapColumnChecksum toColumnChecksum(Column column, ChecksumResult checksumResult)
     {
         return new MapColumnChecksum(
-                checksumResult.getChecksum(getChecksumColumnAlias(column)),
                 checksumResult.getChecksum(getKeysChecksumColumnAlias(column)),
                 checksumResult.getChecksum(getValuesChecksumColumnAlias(column)),
                 checksumResult.getChecksum(getCardinalityChecksumColumnAlias(column)),
