@@ -11,8 +11,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.metadata;
+package com.facebook.presto.execution;
 
-public class ConnectorSerde
+import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
+
+public class ConnectorMetadataUpdateHandleSerde
 {
+    public byte[] serialize(ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle) {
+        return new byte[]{};
+    }
+
+    public ConnectorMetadataUpdateHandle deSerialize(byte[] byteArr) {
+        return null;
+    }
 }

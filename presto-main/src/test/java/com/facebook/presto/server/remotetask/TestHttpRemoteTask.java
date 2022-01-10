@@ -140,7 +140,7 @@ public class TestHttpRemoteTask
     @DataProvider
     public Object[][] thriftEncodingToggle()
     {
-        return new Object[][] {{true}, {false}};
+        return new Object[][] {{false}, {false}};
     }
 
     @Test(timeOut = 30000, dataProvider = "thriftEncodingToggle")

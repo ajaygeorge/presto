@@ -49,7 +49,7 @@ public class AnyThriftCodec<T>
             throws Exception
     {
         String id = null;
-        Object object = null;
+        byte[] byteArr = new byte[]{};
         ProtocolReader protocolReader = new ProtocolReader(protocol);
         protocolReader.readStructBegin();
         while (protocolReader.nextField()) {
@@ -59,11 +59,11 @@ public class AnyThriftCodec<T>
             else if (protocolReader.getFieldId() == 2) {
                 Class<? extends T> aClass = classResolver.apply(id);
                 ThriftCodec<?> codec = new ThriftCodecManager(new CompilerThriftCodecFactory(true)).getCodec(aClass);
-                object = protocolReader.readField(codec);
+                byteArr = (byte[]) protocolReader.readField(codec);
             }
         }
         protocolReader.readStructEnd();
-        return new Any(id, object);
+        return new Any(id, byteArr);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class AnyThriftCodec<T>
         writer.writeField("id", (short) 1, stringCodec, id);
         Class<? extends T> aClass = classResolver.apply(id);
         ThriftCodec<?> codec = new ThriftCodecManager(new CompilerThriftCodecFactory(true)).getCodec(aClass);
-        Object cast = aClass.cast(value.getObj());
+        Object cast = aClass.cast(value.getBytes());
         writer.writeRawField("obj", (short) 2, codec, cast);
         writer.writeStructEnd();
     }

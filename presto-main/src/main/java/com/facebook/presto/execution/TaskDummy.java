@@ -16,57 +16,32 @@ package com.facebook.presto.execution;
 import com.facebook.drift.annotations.ThriftConstructor;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftStruct;
-import com.facebook.presto.metadata.ConnectorSerde;
 import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 
 @ThriftStruct
 public class TaskDummy
 {
     private final int val;
-    private ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle;
-
-    public void setConnectorSerde(ConnectorSerde connectorSerde)
-    {
-        this.connectorSerde = connectorSerde;
-    }
-
-    private ConnectorSerde connectorSerde;
-    private final byte[] connectorMetadataUpdateHandleByteBuffer;
-
-    public TaskDummy(
-            int val,
-            ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle,
-            ConnectorSerde connectorSerde)
-    {
-        this.val = val;
-        this.connectorSerde = connectorSerde;
-        this.connectorMetadataUpdateHandle = connectorMetadataUpdateHandle;
-        this.connectorMetadataUpdateHandleByteBuffer = connectorSerde.serialize(connectorMetadataUpdateHandle);
-    }
+    private final ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle;
 
     @ThriftConstructor
     public TaskDummy(
             int val,
-            byte[] connectorMetadataUpdateHandleByteBuffer)
+            ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle)
     {
         this.val = val;
-        this.connectorMetadataUpdateHandleByteBuffer = connectorMetadataUpdateHandleByteBuffer;
+        this.connectorMetadataUpdateHandle = connectorMetadataUpdateHandle;
     }
 
-    @ThriftField(1)
+    @ThriftField(value = 1, requiredness = ThriftField.Requiredness.OPTIONAL)
     public int getVal()
     {
         return val;
     }
 
-    @ThriftField(2)
-    public byte[] getConnectorMetadataUpdateHandleByteBuffer()
-    {
-        return connectorMetadataUpdateHandleByteBuffer;
-    }
-
+    @ThriftField(value = 2, serde = ConnectorMetadataUpdateHandleSerde.class)
     public ConnectorMetadataUpdateHandle getConnectorMetadataUpdateHandle()
     {
-        return connectorSerde.deSerialize(connectorMetadataUpdateHandleByteBuffer);
+        return connectorMetadataUpdateHandle;
     }
 }
