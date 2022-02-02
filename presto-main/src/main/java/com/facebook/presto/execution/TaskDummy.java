@@ -13,60 +13,57 @@
  */
 package com.facebook.presto.execution;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.facebook.drift.annotations.ThriftConstructor;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftStruct;
-import com.facebook.presto.metadata.ConnectorSerde;
+import com.facebook.drift.codec.metadata.Any;
 import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 
 @ThriftStruct
 public class TaskDummy
 {
     private final int val;
+    //Connector specific Type
     private ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle;
+    //Connector specific Type serialized as Any
+    private Any connectorMetadataUpdateHandleAny;
 
-    public void setConnectorSerde(ConnectorSerde connectorSerde)
-    {
-        this.connectorSerde = connectorSerde;
-    }
-
-    private ConnectorSerde connectorSerde;
-    private final byte[] connectorMetadataUpdateHandleByteBuffer;
-
+    @JsonCreator
     public TaskDummy(
             int val,
-            ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle,
-            ConnectorSerde connectorSerde)
+            ConnectorMetadataUpdateHandle connectorMetadataUpdateHandle)
     {
         this.val = val;
-        this.connectorSerde = connectorSerde;
         this.connectorMetadataUpdateHandle = connectorMetadataUpdateHandle;
-        this.connectorMetadataUpdateHandleByteBuffer = connectorSerde.serialize(connectorMetadataUpdateHandle);
     }
 
     @ThriftConstructor
     public TaskDummy(
             int val,
-            byte[] connectorMetadataUpdateHandleByteBuffer)
+            Any connectorMetadataUpdateHandleAny)
     {
         this.val = val;
-        this.connectorMetadataUpdateHandleByteBuffer = connectorMetadataUpdateHandleByteBuffer;
+        this.connectorMetadataUpdateHandleAny = connectorMetadataUpdateHandleAny;
     }
 
     @ThriftField(1)
+    @JsonProperty
     public int getVal()
     {
         return val;
     }
 
     @ThriftField(2)
-    public byte[] getConnectorMetadataUpdateHandleByteBuffer()
+    public Any getConnectorMetadataUpdateHandleAny()
     {
-        return connectorMetadataUpdateHandleByteBuffer;
+        return connectorMetadataUpdateHandleAny;
     }
 
+    @JsonProperty
     public ConnectorMetadataUpdateHandle getConnectorMetadataUpdateHandle()
     {
-        return connectorSerde.deSerialize(connectorMetadataUpdateHandleByteBuffer);
+        return connectorMetadataUpdateHandle;
     }
 }
