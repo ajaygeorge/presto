@@ -353,6 +353,7 @@ public final class HttpRemoteTask
                     errorScheduledExecutor,
                     stats,
                     binaryTransportEnabled,
+                    thriftTransportEnabled,
                     session,
                     metadataManager,
                     queryManager);

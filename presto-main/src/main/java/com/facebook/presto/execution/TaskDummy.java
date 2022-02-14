@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.facebook.drift.annotations.ThriftConstructor;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftStruct;
-import com.facebook.drift.codec.metadata.Any;
+import com.facebook.presto.server.thrift.Any;
 import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 
 @ThriftStruct

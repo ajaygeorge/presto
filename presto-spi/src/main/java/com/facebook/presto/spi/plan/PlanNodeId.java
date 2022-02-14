@@ -16,20 +16,32 @@ package com.facebook.presto.spi.plan;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftField;
+import com.facebook.drift.annotations.ThriftStruct;
+
 import javax.annotation.concurrent.Immutable;
 
 import static java.util.Objects.requireNonNull;
 
 @Immutable
+@ThriftStruct
 public class PlanNodeId
 {
     private final String id;
 
     @JsonCreator
+    @ThriftConstructor
     public PlanNodeId(String id)
     {
         requireNonNull(id, "id is null");
         this.id = id;
+    }
+
+    @ThriftField(1)
+    public String getId()
+    {
+        return id;
     }
 
     @Override

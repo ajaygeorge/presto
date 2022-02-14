@@ -16,6 +16,10 @@ package com.facebook.presto.common;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftField;
+import com.facebook.drift.annotations.ThriftStruct;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +31,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Metrics exposed by presto operators or connectors. These will be aggregated at the query level.
  */
+@ThriftStruct
 public class RuntimeStats
 {
     private final ConcurrentMap<String, RuntimeMetric> metrics = new ConcurrentHashMap<>();
@@ -36,6 +41,7 @@ public class RuntimeStats
     }
 
     @JsonCreator
+    @ThriftConstructor
     public RuntimeStats(Map<String, RuntimeMetric> metrics)
     {
         requireNonNull(metrics, "metrics is null");
@@ -74,6 +80,7 @@ public class RuntimeStats
     }
 
     @JsonValue
+    @ThriftField(1)
     public Map<String, RuntimeMetric> getMetrics()
     {
         return Collections.unmodifiableMap(metrics);

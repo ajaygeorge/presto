@@ -16,10 +16,15 @@ package com.facebook.presto.execution.buffer;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftField;
+import com.facebook.drift.annotations.ThriftStruct;
+
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
+@ThriftStruct
 public class PageBufferInfo
 {
     private final int partition;
@@ -29,6 +34,7 @@ public class PageBufferInfo
     private final long pagesAdded;
 
     @JsonCreator
+    @ThriftConstructor
     public PageBufferInfo(
             @JsonProperty("partition") int partition,
             @JsonProperty("bufferedPages") long bufferedPages,
@@ -44,30 +50,35 @@ public class PageBufferInfo
     }
 
     @JsonProperty
+    @ThriftField(1)
     public int getPartition()
     {
         return partition;
     }
 
     @JsonProperty
+    @ThriftField(2)
     public long getBufferedPages()
     {
         return bufferedPages;
     }
 
     @JsonProperty
+    @ThriftField(3)
     public long getBufferedBytes()
     {
         return bufferedBytes;
     }
 
     @JsonProperty
+    @ThriftField(4)
     public long getRowsAdded()
     {
         return rowsAdded;
     }
 
     @JsonProperty
+    @ThriftField(5)
     public long getPagesAdded()
     {
         return pagesAdded;

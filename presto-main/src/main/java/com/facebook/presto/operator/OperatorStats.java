@@ -13,6 +13,8 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftStruct;
 import com.facebook.presto.common.RuntimeStats;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.util.Mergeable;
@@ -35,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 @Immutable
+@ThriftStruct
 public class OperatorStats
 {
     private final int stageId;
@@ -90,6 +93,7 @@ public class OperatorStats
     private final RuntimeStats runtimeStats;
 
     @JsonCreator
+    @ThriftConstructor
     public OperatorStats(
             @JsonProperty("stageId") int stageId,
             @JsonProperty("stageExecutionId") int stageExecutionId,
