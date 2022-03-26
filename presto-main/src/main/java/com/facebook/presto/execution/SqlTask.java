@@ -33,6 +33,7 @@ import com.facebook.presto.operator.PipelineStatus;
 import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.operator.TaskExchangeClientManager;
 import com.facebook.presto.operator.TaskStats;
+import com.facebook.presto.operator.TaskStatsLite;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 import com.facebook.presto.spi.connector.ConnectorMetadataUpdater;

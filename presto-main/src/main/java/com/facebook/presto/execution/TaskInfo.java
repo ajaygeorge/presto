@@ -17,6 +17,7 @@ import com.facebook.presto.execution.buffer.BufferInfo;
 import com.facebook.presto.execution.buffer.OutputBufferInfo;
 import com.facebook.presto.metadata.MetadataUpdates;
 import com.facebook.presto.operator.TaskStats;
+import com.facebook.presto.operator.TaskStatsLite;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -43,11 +44,36 @@ public class TaskInfo
     private final DateTime lastHeartbeat;
     private final OutputBufferInfo outputBuffers;
     private final Set<PlanNodeId> noMoreSplits;
-    private final TaskStats stats;
+    private TaskStats stats;
+    private final TaskStatsLite statsLite;
 
     private final boolean needsPlan;
     private final MetadataUpdates metadataUpdates;
     private final String nodeId;
+
+    public TaskInfo(
+            TaskId taskId,
+            TaskStatus taskStatus,
+            DateTime lastHeartbeat,
+            OutputBufferInfo outputBuffers,
+            Set<PlanNodeId> noMoreSplits,
+            TaskStats stats,
+            boolean needsPlan,
+            MetadataUpdates metadataUpdates,
+            String nodeId)
+    {
+        this.taskId = requireNonNull(taskId, "taskId is null");
+        this.taskStatus = requireNonNull(taskStatus, "taskStatus is null");
+        this.lastHeartbeat = requireNonNull(lastHeartbeat, "lastHeartbeat is null");
+        this.outputBuffers = requireNonNull(outputBuffers, "outputBuffers is null");
+        this.stats = requireNonNull(stats, "stats is null");
+        this.noMoreSplits = requireNonNull(noMoreSplits, "noMoreSplits is null");
+        this.statsLite = createTaskStatsLite(stats);
+
+        this.needsPlan = needsPlan;
+        this.metadataUpdates = metadataUpdates;
+        this.nodeId = requireNonNull(nodeId, "nodeId is null");
+    }
 
     @JsonCreator
     public TaskInfo(
@@ -56,7 +82,7 @@ public class TaskInfo
             @JsonProperty("lastHeartbeat") DateTime lastHeartbeat,
             @JsonProperty("outputBuffers") OutputBufferInfo outputBuffers,
             @JsonProperty("noMoreSplits") Set<PlanNodeId> noMoreSplits,
-            @JsonProperty("stats") TaskStats stats,
+            @JsonProperty("statsLite") TaskStatsLite statsLite,
             @JsonProperty("needsPlan") boolean needsPlan,
             @JsonProperty("metadataUpdates") MetadataUpdates metadataUpdates,
             @JsonProperty("nodeId") String nodeId)
@@ -66,11 +92,53 @@ public class TaskInfo
         this.lastHeartbeat = requireNonNull(lastHeartbeat, "lastHeartbeat is null");
         this.outputBuffers = requireNonNull(outputBuffers, "outputBuffers is null");
         this.noMoreSplits = requireNonNull(noMoreSplits, "noMoreSplits is null");
-        this.stats = requireNonNull(stats, "stats is null");
+        this.statsLite = requireNonNull(statsLite, "statsLite is null");
 
         this.needsPlan = needsPlan;
         this.metadataUpdates = metadataUpdates;
         this.nodeId = requireNonNull(nodeId, "nodeId is null");
+    }
+
+    private TaskStatsLite createTaskStatsLite(TaskStats stats)
+    {
+        return new TaskStatsLite(
+                stats.getCreateTime(),
+                stats.getFirstStartTime(),
+                stats.getLastStartTime(),
+                stats.getLastEndTime(),
+                stats.getEndTime(),
+                stats.getElapsedTimeInNanos(),
+                stats.getQueuedTimeInNanos(),
+                stats.getTotalDrivers(),
+                stats.getQueuedDrivers(),
+                stats.getQueuedPartitionedDrivers(),
+                stats.getQueuedPartitionedSplitsWeight(),
+                stats.getRunningDrivers(),
+                stats.getRunningPartitionedDrivers(),
+                stats.getRunningPartitionedSplitsWeight(),
+                stats.getBlockedDrivers(),
+                stats.getCompletedDrivers(),
+                stats.getCumulativeUserMemory(),
+                stats.getCumulativeTotalMemory(),
+                stats.getUserMemoryReservationInBytes(),
+                stats.getRevocableMemoryReservationInBytes(),
+                stats.getSystemMemoryReservationInBytes(),
+                stats.getPeakUserMemoryInBytes(),
+                stats.getPeakTotalMemoryInBytes(),
+                stats.getPeakNodeTotalMemoryInBytes(),
+                stats.getTotalScheduledTimeInNanos(),
+                stats.getTotalCpuTimeInNanos(),
+                stats.getTotalBlockedTimeInNanos(),
+                stats.getTotalAllocationInBytes(),
+                stats.getRawInputDataSizeInBytes(),
+                stats.getRawInputPositions(),
+                stats.getProcessedInputDataSizeInBytes(),
+                stats.getProcessedInputPositions(),
+                stats.getOutputDataSizeInBytes(),
+                stats.getOutputPositions(),
+                stats.getPhysicalWrittenDataSizeInBytes(),
+                stats.getFullGcCount(),
+                stats.getFullGcTimeInMillis());
     }
 
     @JsonProperty
@@ -103,10 +171,15 @@ public class TaskInfo
         return noMoreSplits;
     }
 
-    @JsonProperty
     public TaskStats getStats()
     {
         return stats;
+    }
+
+    @JsonProperty
+    public TaskStatsLite getStatsLite()
+    {
+        return statsLite;
     }
 
     @JsonProperty

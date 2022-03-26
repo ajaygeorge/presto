@@ -21,6 +21,7 @@ import com.facebook.presto.execution.SqlTaskManager;
 import com.facebook.presto.execution.TaskInfo;
 import com.facebook.presto.execution.TaskStatus;
 import com.facebook.presto.operator.TaskStats;
+import com.facebook.presto.operator.TaskStatsLite;
 import com.facebook.presto.spi.QueryId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
@@ -133,7 +134,7 @@ public class GcStatusMonitor
                 .map(entry ->
                         new SimpleEntry<>(entry.getKey(), entry.getValue().stream()
                                 .map(SqlTask::getTaskInfo)
-                                .map(TaskInfo::getStats)
+                                .map(TaskInfo::getStatsLite)
                                 .mapToLong(stats -> stats.getUserMemoryReservationInBytes() + stats.getSystemMemoryReservationInBytes())
                                 .sum())
                 ).sorted(comparator.reversed())
@@ -156,13 +157,13 @@ public class GcStatusMonitor
             List<SqlTask> sqlTasks = tasksByQueryId.get(queryId);
             long userMemoryReservation = sqlTasks.stream()
                     .map(SqlTask::getTaskInfo)
-                    .map(TaskInfo::getStats)
-                    .mapToLong(TaskStats::getUserMemoryReservationInBytes)
+                    .map(TaskInfo::getStatsLite)
+                    .mapToLong(TaskStatsLite::getUserMemoryReservationInBytes)
                     .sum();
             long systemMemoryReservation = sqlTasks.stream()
                     .map(SqlTask::getTaskInfo)
-                    .map(TaskInfo::getStats)
-                    .mapToLong(TaskStats::getSystemMemoryReservationInBytes)
+                    .map(TaskInfo::getStatsLite)
+                    .mapToLong(TaskStatsLite::getSystemMemoryReservationInBytes)
                     .sum();
             return ImmutableList.of(
                     queryId.toString(),

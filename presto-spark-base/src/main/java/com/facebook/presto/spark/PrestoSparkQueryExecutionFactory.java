@@ -650,13 +650,13 @@ public class PrestoSparkQueryExecutionFactory
                 // there's no way to know how many tasks were running in parallel in Spark
                 // for now let's assume that all the tasks were running in parallel
                 peakRunningTasks++;
-                long taskPeakUserMemoryInBytes = taskInfo.getStats().getPeakUserMemoryInBytes();
-                long taskPeakTotalMemoryInBytes = taskInfo.getStats().getPeakTotalMemoryInBytes();
+                long taskPeakUserMemoryInBytes = taskInfo.getStatsLite().getPeakUserMemoryInBytes();
+                long taskPeakTotalMemoryInBytes = taskInfo.getStatsLite().getPeakTotalMemoryInBytes();
                 peakUserMemoryReservationInBytes += taskPeakUserMemoryInBytes;
                 peakTotalMemoryReservationInBytes += taskPeakTotalMemoryInBytes;
                 peakTaskUserMemoryInBytes = max(peakTaskUserMemoryInBytes, taskPeakUserMemoryInBytes);
                 peakTaskTotalMemoryInBytes = max(peakTaskTotalMemoryInBytes, taskPeakTotalMemoryInBytes);
-                peakNodeTotalMemoryInBytes = max(taskInfo.getStats().getPeakNodeTotalMemoryInBytes(), peakNodeTotalMemoryInBytes);
+                peakNodeTotalMemoryInBytes = max(taskInfo.getStatsLite().getPeakNodeTotalMemoryInBytes(), peakNodeTotalMemoryInBytes);
             }
         }
 
@@ -726,9 +726,9 @@ public class PrestoSparkQueryExecutionFactory
         long peakUserMemoryReservationInBytes = 0;
         long peakNodeTotalMemoryReservationInBytes = 0;
         for (TaskInfo taskInfo : taskInfos) {
-            long taskPeakUserMemoryInBytes = taskInfo.getStats().getUserMemoryReservationInBytes();
+            long taskPeakUserMemoryInBytes = taskInfo.getStatsLite().getUserMemoryReservationInBytes();
             peakUserMemoryReservationInBytes += taskPeakUserMemoryInBytes;
-            peakNodeTotalMemoryReservationInBytes = max(taskInfo.getStats().getPeakNodeTotalMemoryInBytes(), peakNodeTotalMemoryReservationInBytes);
+            peakNodeTotalMemoryReservationInBytes = max(taskInfo.getStatsLite().getPeakNodeTotalMemoryInBytes(), peakNodeTotalMemoryReservationInBytes);
         }
         StageExecutionInfo stageExecutionInfo = StageExecutionInfo.create(
                 new StageExecutionId(stageId, 0),

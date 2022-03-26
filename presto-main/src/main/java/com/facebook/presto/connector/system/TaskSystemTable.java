@@ -17,8 +17,8 @@ import com.facebook.airlift.node.NodeInfo;
 import com.facebook.presto.common.predicate.TupleDomain;
 import com.facebook.presto.execution.TaskInfo;
 import com.facebook.presto.execution.TaskManager;
+import com.facebook.presto.operator.TaskStatsLite;
 import com.facebook.presto.execution.TaskStatus;
-import com.facebook.presto.operator.TaskStats;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.InMemoryRecordSet;
@@ -107,7 +107,7 @@ public class TaskSystemTable
     {
         Builder table = InMemoryRecordSet.builder(TASK_TABLE);
         for (TaskInfo taskInfo : taskManager.getAllTaskInfo()) {
-            TaskStats stats = taskInfo.getStats();
+            TaskStatsLite stats = taskInfo.getStatsLite();
             TaskStatus taskStatus = taskInfo.getTaskStatus();
             table.addRow(
                     nodeId,

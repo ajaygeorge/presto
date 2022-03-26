@@ -331,7 +331,7 @@ public final class SqlStageExecution
     public Duration getTotalCpuTime()
     {
         long millis = getAllTasks().stream()
-                .mapToLong(task -> NANOSECONDS.toMillis(task.getTaskInfo().getStats().getTotalCpuTimeInNanos()))
+                .mapToLong(task -> NANOSECONDS.toMillis(task.getTaskInfo().getStatsLite().getTotalCpuTimeInNanos()))
                 .sum();
         return new Duration(millis, TimeUnit.MILLISECONDS);
     }
@@ -342,7 +342,7 @@ public final class SqlStageExecution
             return new DataSize(0, BYTE);
         }
         long datasize = getAllTasks().stream()
-                .mapToLong(task -> task.getTaskInfo().getStats().getRawInputDataSizeInBytes())
+                .mapToLong(task -> task.getTaskInfo().getStatsLite().getRawInputDataSizeInBytes())
                 .sum();
         return DataSize.succinctBytes(datasize);
     }
