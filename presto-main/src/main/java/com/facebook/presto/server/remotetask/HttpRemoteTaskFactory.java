@@ -22,6 +22,7 @@ import com.facebook.airlift.json.smile.SmileCodec;
 import com.facebook.airlift.stats.DecayCounter;
 import com.facebook.airlift.stats.ExponentialDecay;
 import com.facebook.drift.codec.ThriftCodec;
+import com.facebook.drift.codec.ThriftCodecManager;
 import com.facebook.drift.transport.netty.codec.Protocol;
 import com.facebook.presto.Session;
 import com.facebook.presto.execution.LocationFactory;
@@ -36,6 +37,7 @@ import com.facebook.presto.execution.TaskManagerConfig;
 import com.facebook.presto.execution.TaskStatus;
 import com.facebook.presto.execution.buffer.OutputBuffers;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
+import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.InternalNode;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.MetadataUpdates;
@@ -72,12 +74,16 @@ public class HttpRemoteTaskFactory
     private final LocationFactory locationFactory;
     private final Codec<TaskStatus> taskStatusCodec;
     private final Codec<TaskInfo> taskInfoCodec;
+    private final Codec<TaskInfo> taskInfoJsonCodec;
     private final Codec<TaskUpdateRequest> taskUpdateRequestCodec;
     private final Codec<PlanFragment> planFragmentCodec;
     private final Codec<MetadataUpdates> metadataUpdatesCodec;
     private final Duration maxErrorDuration;
     private final Duration taskStatusRefreshMaxWait;
     private final Duration taskInfoRefreshMaxWait;
+    private final HandleResolver handleResolver;
+    private final ThriftCodecManager thriftCodecManager;
+
     private final Duration taskInfoUpdateInterval;
     private final ExecutorService coreExecutor;
     private final Executor executor;
@@ -103,6 +109,7 @@ public class HttpRemoteTaskFactory
             SmileCodec<TaskStatus> taskStatusSmileCodec,
             ThriftCodec<TaskStatus> taskStatusThriftCodec,
             JsonCodec<TaskInfo> taskInfoJsonCodec,
+            ThriftCodec<TaskInfo> taskInfoThriftCodec,
             SmileCodec<TaskInfo> taskInfoSmileCodec,
             JsonCodec<TaskUpdateRequest> taskUpdateRequestJsonCodec,
             SmileCodec<TaskUpdateRequest> taskUpdateRequestSmileCodec,
@@ -113,7 +120,9 @@ public class HttpRemoteTaskFactory
             RemoteTaskStats stats,
             InternalCommunicationConfig communicationConfig,
             MetadataManager metadataManager,
-            QueryManager queryManager)
+            QueryManager queryManager,
+            HandleResolver handleResolver,
+            ThriftCodecManager thriftCodecManager)
     {
         this.httpClient = httpClient;
         this.locationFactory = locationFactory;
@@ -121,6 +130,9 @@ public class HttpRemoteTaskFactory
         this.taskStatusRefreshMaxWait = taskConfig.getStatusRefreshMaxWait();
         this.taskInfoUpdateInterval = taskConfig.getInfoUpdateInterval();
         this.taskInfoRefreshMaxWait = taskConfig.getInfoRefreshMaxWait();
+        this.handleResolver = handleResolver;
+        this.thriftCodecManager = thriftCodecManager;
+
         this.coreExecutor = newCachedThreadPool(daemonThreadsNamed("remote-task-callback-%s"));
         this.executor = new BoundedExecutor(coreExecutor, config.getRemoteTaskMaxCallbackThreads());
         this.executorMBean = new ThreadPoolExecutorMBean((ThreadPoolExecutor) coreExecutor);
@@ -133,21 +145,23 @@ public class HttpRemoteTaskFactory
 
         if (thriftTransportEnabled) {
             this.taskStatusCodec = wrapThriftCodec(taskStatusThriftCodec);
+            this.taskInfoCodec = wrapThriftCodec(taskInfoThriftCodec);
         }
         else if (binaryTransportEnabled) {
             this.taskStatusCodec = taskStatusSmileCodec;
+            this.taskInfoCodec = taskInfoSmileCodec;
         }
         else {
             this.taskStatusCodec = taskStatusJsonCodec;
+            this.taskInfoCodec = taskInfoJsonCodec;
         }
 
+        this.taskInfoJsonCodec = taskInfoJsonCodec;
         if (binaryTransportEnabled) {
-            this.taskInfoCodec = taskInfoSmileCodec;
             this.taskUpdateRequestCodec = taskUpdateRequestSmileCodec;
             this.metadataUpdatesCodec = metadataUpdatesSmileCodec;
         }
         else {
-            this.taskInfoCodec = taskInfoJsonCodec;
             this.taskUpdateRequestCodec = taskUpdateRequestJsonCodec;
             this.metadataUpdatesCodec = metadataUpdatesJsonCodec;
         }
@@ -214,6 +228,7 @@ public class HttpRemoteTaskFactory
                 summarizeTaskInfo,
                 taskStatusCodec,
                 taskInfoCodec,
+                taskInfoJsonCodec,
                 taskUpdateRequestCodec,
                 planFragmentCodec,
                 metadataUpdatesCodec,
@@ -226,6 +241,8 @@ public class HttpRemoteTaskFactory
                 maxTaskUpdateSizeInBytes,
                 metadataManager,
                 queryManager,
-                taskUpdateRequestSize);
+                taskUpdateRequestSize,
+                handleResolver,
+                thriftCodecManager);
     }
 }

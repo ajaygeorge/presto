@@ -311,7 +311,7 @@ public class TestingAccessControlManager
             }
         }
         if (denyPrivileges.isEmpty()) {
-            super.checkCanSelectFromColumns(transactionId, identity, context, tableName, columnOrSubfieldNames);
+            //super.checkCanSelectFromColumns(transactionId, identity, context, tableName, columnOrSubfieldNames);
         }
     }
 

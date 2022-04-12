@@ -23,6 +23,7 @@ import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.json.smile.SmileCodec;
 import com.facebook.airlift.json.smile.SmileModule;
 import com.facebook.drift.codec.ThriftCodec;
+import com.facebook.drift.codec.ThriftCodecManager;
 import com.facebook.drift.codec.guice.ThriftCodecModule;
 import com.facebook.presto.client.NodeVersion;
 import com.facebook.presto.common.type.Type;
@@ -306,6 +307,7 @@ public class TestHttpRemoteTask
                             SmileCodec<TaskStatus> taskStatusSmileCodec,
                             ThriftCodec<TaskStatus> taskStatusThriftCodec,
                             JsonCodec<TaskInfo> taskInfoJsonCodec,
+                            ThriftCodec<TaskInfo> taskInfoThriftCodec,
                             SmileCodec<TaskInfo> taskInfoSmileCodec,
                             JsonCodec<TaskUpdateRequest> taskUpdateRequestJsonCodec,
                             SmileCodec<TaskUpdateRequest> taskUpdateRequestSmileCodec,
@@ -326,6 +328,7 @@ public class TestHttpRemoteTask
                                 taskStatusSmileCodec,
                                 taskStatusThriftCodec,
                                 taskInfoJsonCodec,
+                                taskInfoThriftCodec,
                                 taskInfoSmileCodec,
                                 taskUpdateRequestJsonCodec,
                                 taskUpdateRequestSmileCodec,
@@ -336,7 +339,9 @@ public class TestHttpRemoteTask
                                 new RemoteTaskStats(),
                                 new InternalCommunicationConfig().setThriftTransportEnabled(useThriftEncoding),
                                 createTestMetadataManager(),
-                                new TestQueryManager());
+                                new TestQueryManager(),
+                                new HandleResolver(),
+                                new ThriftCodecManager());
                     }
                 });
         Injector injector = app

@@ -13,6 +13,9 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.drift.annotations.ThriftConstructor;
+import com.facebook.drift.annotations.ThriftField;
+import com.facebook.drift.annotations.ThriftStruct;
 import com.facebook.presto.util.Mergeable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,18 +26,20 @@ import java.util.List;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
+@ThriftStruct
 public class ExchangeClientStatus
         implements Mergeable<ExchangeClientStatus>, OperatorInfo
 {
     private final long bufferedBytes;
     private final long maxBufferedBytes;
     private final long averageBytesPerRequest;
-    private final long successfulRequestsCount;
+    private final long successFullRequestsCount;
     private final int bufferedPages;
     private final boolean noMoreLocations;
     private final List<PageBufferClientStatus> pageBufferClientStatuses;
 
     @JsonCreator
+    @ThriftConstructor
     public ExchangeClientStatus(
             @JsonProperty("bufferedBytes") long bufferedBytes,
             @JsonProperty("maxBufferedBytes") long maxBufferedBytes,
@@ -47,49 +52,56 @@ public class ExchangeClientStatus
         this.bufferedBytes = bufferedBytes;
         this.maxBufferedBytes = maxBufferedBytes;
         this.averageBytesPerRequest = averageBytesPerRequest;
-        this.successfulRequestsCount = successFullRequestsCount;
+        this.successFullRequestsCount = successFullRequestsCount;
         this.bufferedPages = bufferedPages;
         this.noMoreLocations = noMoreLocations;
         this.pageBufferClientStatuses = ImmutableList.copyOf(requireNonNull(pageBufferClientStatuses, "pageBufferClientStatuses is null"));
     }
 
     @JsonProperty
+    @ThriftField(1)
     public long getBufferedBytes()
     {
         return bufferedBytes;
     }
 
     @JsonProperty
+    @ThriftField(2)
     public long getMaxBufferedBytes()
     {
         return maxBufferedBytes;
     }
 
     @JsonProperty
+    @ThriftField(3)
     public long getAverageBytesPerRequest()
     {
         return averageBytesPerRequest;
     }
 
     @JsonProperty
-    public long getSuccessfulRequestsCount()
+    @ThriftField(4)
+    public long getSuccessFullRequestsCount()
     {
-        return successfulRequestsCount;
+        return successFullRequestsCount;
     }
 
     @JsonProperty
+    @ThriftField(5)
     public int getBufferedPages()
     {
         return bufferedPages;
     }
 
     @JsonProperty
+    @ThriftField(6)
     public boolean isNoMoreLocations()
     {
         return noMoreLocations;
     }
 
     @JsonProperty
+    @ThriftField(7)
     public List<PageBufferClientStatus> getPageBufferClientStatuses()
     {
         return pageBufferClientStatuses;
@@ -108,7 +120,7 @@ public class ExchangeClientStatus
                 .add("bufferBytes", bufferedBytes)
                 .add("maxBufferedBytes", maxBufferedBytes)
                 .add("averageBytesPerRequest", averageBytesPerRequest)
-                .add("successfulRequestsCount", successfulRequestsCount)
+                .add("successFullRequestsCount", successFullRequestsCount)
                 .add("bufferedPages", bufferedPages)
                 .add("noMoreLocations", noMoreLocations)
                 .add("pageBufferClientStatuses", pageBufferClientStatuses)
@@ -121,8 +133,8 @@ public class ExchangeClientStatus
         return new ExchangeClientStatus(
                 (bufferedBytes + other.bufferedBytes) / 2, // this is correct as long as all clients have the same buffer size (capacity)
                 Math.max(maxBufferedBytes, other.maxBufferedBytes),
-                mergeAvgs(averageBytesPerRequest, successfulRequestsCount, other.averageBytesPerRequest, other.successfulRequestsCount),
-                successfulRequestsCount + other.successfulRequestsCount,
+                mergeAvgs(averageBytesPerRequest, successFullRequestsCount, other.averageBytesPerRequest, other.successFullRequestsCount),
+                successFullRequestsCount + other.successFullRequestsCount,
                 bufferedPages + other.bufferedPages,
                 noMoreLocations && other.noMoreLocations, // if at least one has some locations, merge has some too
                 ImmutableList.of()); // pageBufferClientStatuses may be long, so we don't want to combine the lists

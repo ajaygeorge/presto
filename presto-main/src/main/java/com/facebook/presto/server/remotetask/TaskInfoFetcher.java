@@ -19,9 +19,13 @@ import com.facebook.airlift.http.client.HttpUriBuilder;
 import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.Response;
 import com.facebook.airlift.http.client.ResponseHandler;
+import com.facebook.airlift.http.client.thrift.ThriftRequestUtils;
+import com.facebook.airlift.http.client.thrift.ThriftResponseHandler;
 import com.facebook.airlift.json.Codec;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.json.smile.SmileCodec;
+import com.facebook.drift.codec.ThriftCodecManager;
+import com.facebook.drift.transport.netty.codec.Protocol;
 import com.facebook.presto.Session;
 import com.facebook.presto.execution.QueryManager;
 import com.facebook.presto.execution.StateMachine;
@@ -29,12 +33,24 @@ import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.TaskId;
 import com.facebook.presto.execution.TaskInfo;
 import com.facebook.presto.execution.TaskStatus;
+import com.facebook.presto.metadata.ConnectorMetadataUpdateHandleSerde;
+import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.MetadataUpdates;
+import com.facebook.presto.operator.DriverStats;
+import com.facebook.presto.operator.OperatorInfo;
+import com.facebook.presto.operator.OperatorInfoUnion;
+import com.facebook.presto.operator.OperatorStats;
+import com.facebook.presto.operator.PipelineStats;
+import com.facebook.presto.operator.TaskStats;
 import com.facebook.presto.server.RequestErrorTracker;
 import com.facebook.presto.server.SimpleHttpResponseCallback;
 import com.facebook.presto.server.SimpleHttpResponseHandler;
 import com.facebook.presto.server.smile.BaseResponse;
+import com.facebook.presto.server.thrift.Any;
+import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
+import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
@@ -42,6 +58,7 @@ import io.airlift.units.Duration;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -61,10 +78,12 @@ import static com.facebook.presto.server.RequestErrorTracker.taskRequestErrorTra
 import static com.facebook.presto.server.RequestHelpers.setContentTypeHeaders;
 import static com.facebook.presto.server.smile.AdaptingJsonResponseHandler.createAdaptingJsonResponseHandler;
 import static com.facebook.presto.server.smile.FullSmileResponseHandler.createFullSmileResponseHandler;
+import static com.facebook.presto.server.thrift.ThriftCodecWrapper.unwrapThriftCodec;
 import static com.facebook.presto.spi.StandardErrorCode.REMOTE_TASK_ERROR;
 import static io.airlift.units.Duration.nanosSince;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 
 public class TaskInfoFetcher
         implements SimpleHttpResponseCallback<TaskInfo>
@@ -106,9 +125,13 @@ public class TaskInfoFetcher
     private ListenableFuture<?> metadataUpdateFuture;
 
     private final boolean isBinaryTransportEnabled;
+    private final boolean isThriftTransportEnabled;
     private final Session session;
     private final MetadataManager metadataManager;
     private final QueryManager queryManager;
+    private final HandleResolver handleResolver;
+    private final ThriftCodecManager thriftCodecManager;
+    private Protocol thriftProtocol;
 
     public TaskInfoFetcher(
             Consumer<Throwable> onFail,
@@ -125,9 +148,13 @@ public class TaskInfoFetcher
             ScheduledExecutorService errorScheduledExecutor,
             RemoteTaskStats stats,
             boolean isBinaryTransportEnabled,
+            boolean isThriftTransportEnabled,
             Session session,
             MetadataManager metadataManager,
-            QueryManager queryManager)
+            QueryManager queryManager,
+            HandleResolver handleResolver,
+            ThriftCodecManager thriftCodecManager,
+            Protocol thriftProtocol)
     {
         requireNonNull(initialTask, "initialTask is null");
         requireNonNull(errorScheduledExecutor, "errorScheduledExecutor is null");
@@ -151,9 +178,13 @@ public class TaskInfoFetcher
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
         this.stats = requireNonNull(stats, "stats is null");
         this.isBinaryTransportEnabled = isBinaryTransportEnabled;
+        this.isThriftTransportEnabled = isThriftTransportEnabled;
         this.session = requireNonNull(session, "session is null");
         this.metadataManager = requireNonNull(metadataManager, "metadataManager is null");
         this.queryManager = requireNonNull(queryManager, "queryManager is null");
+        this.handleResolver = requireNonNull(handleResolver, "handleResolver is null");
+        this.thriftCodecManager = requireNonNull(thriftCodecManager, "thriftCodecManager is null");
+        this.thriftProtocol = requireNonNull(thriftProtocol, "thriftProtocol is null");
     }
 
     public TaskInfo getTaskInfo()
@@ -257,27 +288,41 @@ public class TaskInfoFetcher
 
         HttpUriBuilder httpUriBuilder = uriBuilderFrom(taskStatus.getSelf());
         URI uri = summarizeTaskInfo ? httpUriBuilder.addParameter("summarize").build() : httpUriBuilder.build();
-        Request.Builder uriBuilder = setContentTypeHeaders(isBinaryTransportEnabled, prepareGet());
-
-        if (taskInfoRefreshMaxWait.toMillis() != 0L) {
-            uriBuilder.setHeader(PRESTO_CURRENT_STATE, taskStatus.getState().toString())
-                    .setHeader(PRESTO_MAX_WAIT, taskInfoRefreshMaxWait.toString());
-        }
-
-        Request request = uriBuilder.setUri(uri).build();
+        Request.Builder requestBuilder = setContentTypeHeaders(isBinaryTransportEnabled, prepareGet());
 
         ResponseHandler responseHandler;
-        if (isBinaryTransportEnabled) {
+        if (isThriftTransportEnabled) {
+            requestBuilder = ThriftRequestUtils.prepareThriftGet(Protocol.BINARY);
+            responseHandler = new ThriftResponseHandler(unwrapThriftCodec(taskInfoCodec));
+        }
+        else if (isBinaryTransportEnabled) {
             responseHandler = createFullSmileResponseHandler((SmileCodec<TaskInfo>) taskInfoCodec);
         }
         else {
             responseHandler = createAdaptingJsonResponseHandler((JsonCodec<TaskInfo>) taskInfoCodec);
         }
 
+        if (taskInfoRefreshMaxWait.toMillis() != 0L) {
+            requestBuilder.setHeader(PRESTO_CURRENT_STATE, taskStatus.getState().toString())
+                    .setHeader(PRESTO_MAX_WAIT, taskInfoRefreshMaxWait.toString());
+        }
+
+        Request request = requestBuilder.setUri(uri).build();
         errorTracker.startRequest();
         future = httpClient.executeAsync(request, responseHandler);
         currentRequestStartNanos.set(System.nanoTime());
-        Futures.addCallback(future, new SimpleHttpResponseHandler<>(this, request.getUri(), stats.getHttpResponseStats(), REMOTE_TASK_ERROR), executor);
+        FutureCallback callback;
+        if (isThriftTransportEnabled) {
+            callback = new ThriftHttpResponseHandler(this, request.getUri(), stats.getHttpResponseStats(), REMOTE_TASK_ERROR);
+        }
+        else {
+            callback = new SimpleHttpResponseHandler<>(this, request.getUri(), stats.getHttpResponseStats(), REMOTE_TASK_ERROR);
+        }
+
+        Futures.addCallback(
+                future,
+                callback,
+                executor);
     }
 
     synchronized void updateTaskInfo(TaskInfo newValue)
@@ -311,8 +356,265 @@ public class TaskInfoFetcher
             }
             updateStats(startNanos);
             errorTracker.requestSucceeded();
+            if (isThriftTransportEnabled) {
+                newValue = convertFromThriftTaskInfo(newValue);
+            }
             updateTaskInfo(newValue);
         }
+    }
+
+    private TaskInfo convertFromThriftTaskInfo(TaskInfo thriftTaskInfo)
+    {
+        return new TaskInfo(
+                thriftTaskInfo.getTaskId(),
+                thriftTaskInfo.getTaskStatus(),
+                thriftTaskInfo.getLastHeartbeat(),
+                thriftTaskInfo.getOutputBuffers(),
+                thriftTaskInfo.getNoMoreSplits(),
+                convertFromThriftTaskStats(thriftTaskInfo.getStats()),
+                thriftTaskInfo.isNeedsPlan(),
+                convertFromThriftMetadataUpdates(thriftTaskInfo.getMetadataUpdates()),
+                thriftTaskInfo.getNodeId());
+    }
+
+    private TaskStats convertFromThriftTaskStats(TaskStats thriftTaskStats)
+    {
+        if (thriftTaskStats.getPipelines().isEmpty()) {
+            return thriftTaskStats;
+        }
+
+        return new TaskStats(
+                thriftTaskStats.getCreateTime(),
+                thriftTaskStats.getFirstStartTime(),
+                thriftTaskStats.getLastStartTime(),
+                thriftTaskStats.getLastEndTime(),
+                thriftTaskStats.getEndTime(),
+                thriftTaskStats.getElapsedTimeInNanos(),
+                thriftTaskStats.getQueuedTimeInNanos(),
+                thriftTaskStats.getTotalDrivers(),
+                thriftTaskStats.getQueuedDrivers(),
+                thriftTaskStats.getQueuedPartitionedDrivers(),
+                thriftTaskStats.getQueuedPartitionedSplitsWeight(),
+                thriftTaskStats.getRunningDrivers(),
+                thriftTaskStats.getRunningPartitionedDrivers(),
+                thriftTaskStats.getRunningPartitionedSplitsWeight(),
+                thriftTaskStats.getBlockedDrivers(),
+                thriftTaskStats.getCompletedDrivers(),
+                thriftTaskStats.getCumulativeUserMemory(),
+                thriftTaskStats.getCumulativeTotalMemory(),
+                thriftTaskStats.getUserMemoryReservationInBytes(),
+                thriftTaskStats.getRevocableMemoryReservationInBytes(),
+                thriftTaskStats.getSystemMemoryReservationInBytes(),
+                thriftTaskStats.getPeakUserMemoryInBytes(),
+                thriftTaskStats.getPeakTotalMemoryInBytes(),
+                thriftTaskStats.getPeakNodeTotalMemoryInBytes(),
+                thriftTaskStats.getTotalScheduledTimeInNanos(),
+                thriftTaskStats.getTotalCpuTimeInNanos(),
+                thriftTaskStats.getTotalBlockedTimeInNanos(),
+                thriftTaskStats.isFullyBlocked(),
+                thriftTaskStats.getBlockedReasons(),
+                thriftTaskStats.getTotalAllocationInBytes(),
+                thriftTaskStats.getRawInputDataSizeInBytes(),
+                thriftTaskStats.getRawInputPositions(),
+                thriftTaskStats.getProcessedInputDataSizeInBytes(),
+                thriftTaskStats.getProcessedInputPositions(),
+                thriftTaskStats.getOutputDataSizeInBytes(),
+                thriftTaskStats.getOutputPositions(),
+                thriftTaskStats.getPhysicalWrittenDataSizeInBytes(),
+                thriftTaskStats.getFullGcCount(),
+                thriftTaskStats.getFullGcTimeInMillis(),
+                convertFromThriftPipeLineStatsList(thriftTaskStats.getPipelines()),
+                thriftTaskStats.getRuntimeStats());
+    }
+
+    private List<PipelineStats> convertFromThriftPipeLineStatsList(List<PipelineStats> pipelines)
+    {
+        return pipelines.stream()
+                .map(p -> convertFromThriftPipelineStats(p))
+                .collect(toList());
+    }
+
+    private PipelineStats convertFromThriftPipelineStats(PipelineStats thriftPipelineStats)
+    {
+        if (thriftPipelineStats.getDrivers().isEmpty() && thriftPipelineStats.getOperatorSummaries().isEmpty()) {
+            return thriftPipelineStats;
+        }
+
+        return new PipelineStats(
+                thriftPipelineStats.getPipelineId(),
+                thriftPipelineStats.getFirstStartTime(),
+                thriftPipelineStats.getLastStartTime(),
+                thriftPipelineStats.getLastEndTime(),
+                thriftPipelineStats.isInputPipeline(),
+                thriftPipelineStats.isOutputPipeline(),
+                thriftPipelineStats.getTotalDrivers(),
+                thriftPipelineStats.getQueuedDrivers(),
+                thriftPipelineStats.getQueuedPartitionedDrivers(),
+                thriftPipelineStats.getQueuedPartitionedSplitsWeight(),
+                thriftPipelineStats.getRunningDrivers(),
+                thriftPipelineStats.getRunningPartitionedDrivers(),
+                thriftPipelineStats.getRunningPartitionedSplitsWeight(),
+                thriftPipelineStats.getBlockedDrivers(),
+                thriftPipelineStats.getCompletedDrivers(),
+                thriftPipelineStats.getUserMemoryReservationInBytes(),
+                thriftPipelineStats.getRevocableMemoryReservationInBytes(),
+                thriftPipelineStats.getSystemMemoryReservationInBytes(),
+                thriftPipelineStats.getQueuedTime(),
+                thriftPipelineStats.getElapsedTime(),
+                thriftPipelineStats.getTotalScheduledTimeInNanos(),
+                thriftPipelineStats.getTotalCpuTimeInNanos(),
+                thriftPipelineStats.getTotalBlockedTimeInNanos(),
+                thriftPipelineStats.isFullyBlocked(),
+                thriftPipelineStats.getBlockedReasons(),
+                thriftPipelineStats.getTotalAllocationInBytes(),
+                thriftPipelineStats.getRawInputDataSizeInBytes(),
+                thriftPipelineStats.getRawInputPositions(),
+                thriftPipelineStats.getProcessedInputDataSizeInBytes(),
+                thriftPipelineStats.getProcessedInputPositions(),
+                thriftPipelineStats.getOutputDataSizeInBytes(),
+                thriftPipelineStats.getOutputPositions(),
+                thriftPipelineStats.getPhysicalWrittenDataSizeInBytes(),
+                convertFromThriftOperatorStatsList(thriftPipelineStats.getOperatorSummaries()),
+                convertFromThriftDriverStatsList(thriftPipelineStats.getDrivers()));
+    }
+
+    private List<DriverStats> convertFromThriftDriverStatsList(List<DriverStats> thriftDrivers)
+    {
+        return thriftDrivers.stream()
+                .map(d -> d.getOperatorStats().isEmpty() ? d : convertFromThriftDriverStats(d))
+                .collect(toList());
+    }
+
+    private DriverStats convertFromThriftDriverStats(DriverStats thriftDriverStats)
+    {
+        return new DriverStats(
+                thriftDriverStats.getLifespan(),
+                thriftDriverStats.getCreateTime(),
+                thriftDriverStats.getStartTime(),
+                thriftDriverStats.getEndTime(),
+                thriftDriverStats.getQueuedTime(),
+                thriftDriverStats.getElapsedTime(),
+                thriftDriverStats.getUserMemoryReservation(),
+                thriftDriverStats.getRevocableMemoryReservation(),
+                thriftDriverStats.getSystemMemoryReservation(),
+                thriftDriverStats.getTotalScheduledTime(),
+                thriftDriverStats.getTotalCpuTime(),
+                thriftDriverStats.getTotalBlockedTime(),
+                thriftDriverStats.isFullyBlocked(),
+                thriftDriverStats.getBlockedReasons(),
+                thriftDriverStats.getTotalAllocation(),
+                thriftDriverStats.getRawInputDataSize(),
+                thriftDriverStats.getRawInputPositions(),
+                thriftDriverStats.getRawInputReadTime(),
+                thriftDriverStats.getProcessedInputDataSize(),
+                thriftDriverStats.getProcessedInputPositions(),
+                thriftDriverStats.getOutputDataSize(),
+                thriftDriverStats.getOutputPositions(),
+                thriftDriverStats.getPhysicalWrittenDataSize(),
+                convertFromThriftOperatorStatsList(thriftDriverStats.getOperatorStats()));
+    }
+
+    private List<OperatorStats> convertFromThriftOperatorStatsList(List<OperatorStats> thriftOperatorSummaries)
+    {
+        return thriftOperatorSummaries.stream()
+                .map(os -> os.getInfoUnion() != null ? convertFromThriftOperatorStats(os) : os)
+                .collect(toList());
+    }
+
+    private OperatorStats convertFromThriftOperatorStats(OperatorStats thriftOperatorStats)
+    {
+        return new OperatorStats(
+                thriftOperatorStats.getStageId(),
+                thriftOperatorStats.getStageExecutionId(),
+                thriftOperatorStats.getPipelineId(),
+                thriftOperatorStats.getOperatorId(),
+                thriftOperatorStats.getPlanNodeId(),
+                thriftOperatorStats.getOperatorType(),
+                thriftOperatorStats.getTotalDrivers(),
+                thriftOperatorStats.getAddInputCalls(),
+                thriftOperatorStats.getAddInputWall(),
+                thriftOperatorStats.getAddInputCpu(),
+                thriftOperatorStats.getAddInputAllocation(),
+                thriftOperatorStats.getRawInputDataSize(),
+                thriftOperatorStats.getRawInputPositions(),
+                thriftOperatorStats.getInputDataSize(),
+                thriftOperatorStats.getInputPositions(),
+                thriftOperatorStats.getSumSquaredInputPositions(),
+                thriftOperatorStats.getGetOutputCalls(),
+                thriftOperatorStats.getGetOutputWall(),
+                thriftOperatorStats.getGetOutputCpu(),
+                thriftOperatorStats.getGetOutputAllocation(),
+                thriftOperatorStats.getOutputDataSize(),
+                thriftOperatorStats.getOutputPositions(),
+                thriftOperatorStats.getPhysicalWrittenDataSize(),
+                thriftOperatorStats.getAdditionalCpu(),
+                thriftOperatorStats.getBlockedWall(),
+                thriftOperatorStats.getFinishCalls(),
+                thriftOperatorStats.getFinishWall(),
+                thriftOperatorStats.getFinishCpu(),
+                thriftOperatorStats.getFinishAllocation(),
+                thriftOperatorStats.getUserMemoryReservation(),
+                thriftOperatorStats.getRevocableMemoryReservation(),
+                thriftOperatorStats.getSystemMemoryReservation(),
+                thriftOperatorStats.getPeakUserMemoryReservation(),
+                thriftOperatorStats.getPeakSystemMemoryReservation(),
+                thriftOperatorStats.getPeakTotalMemoryReservation(),
+                thriftOperatorStats.getSpilledDataSize(),
+                thriftOperatorStats.getBlockedReason(),
+                convertFromThriftOperatorInfo(thriftOperatorStats.getInfoUnion()),
+                thriftOperatorStats.getRuntimeStats());
+    }
+
+    private OperatorInfo convertFromThriftOperatorInfo(OperatorInfoUnion infoUnion)
+    {
+        if (infoUnion.getExchangeClientStatus() != null) {
+            return infoUnion.getExchangeClientStatus();
+        }
+        else if (infoUnion.getLocalExchangeBufferInfo() != null) {
+            return infoUnion.getLocalExchangeBufferInfo();
+        }
+        else if (infoUnion.getTableFinishInfo() != null) {
+            return infoUnion.getTableFinishInfo();
+        }
+        else if (infoUnion.getSplitOperatorInfo() != null) {
+            return infoUnion.getSplitOperatorInfo();
+        }
+        else if (infoUnion.getHashCollisionsInfo() != null) {
+            return infoUnion.getHashCollisionsInfo();
+        }
+        else if (infoUnion.getPartitionedOutputInfo() != null) {
+            return infoUnion.getPartitionedOutputInfo();
+        }
+        else if (infoUnion.getJoinOperatorInfo() != null) {
+            return infoUnion.getJoinOperatorInfo();
+        }
+        else if (infoUnion.getWindowInfo() != null) {
+            return infoUnion.getWindowInfo();
+        }
+        else if (infoUnion.getTableWriterInfo() != null) {
+            return infoUnion.getTableWriterInfo();
+        }
+        else if (infoUnion.getTableWriterMergeInfo() != null) {
+            return infoUnion.getTableWriterMergeInfo();
+        }
+        else {
+            return null;
+        }
+    }
+
+    private MetadataUpdates convertFromThriftMetadataUpdates(MetadataUpdates metadataUpdates)
+    {
+        List<Any> metadataUpdateHandles = metadataUpdates.getMetadataUpdatesAny();
+        List<ConnectorMetadataUpdateHandle> connectorMetadataUpdateHandles = convertToConnector(metadataUpdateHandles);
+        return new MetadataUpdates(metadataUpdates.getConnectorId(), connectorMetadataUpdateHandles);
+    }
+
+    private List<ConnectorMetadataUpdateHandle> convertToConnector(List<Any> metadataUpdateHandles)
+    {
+        ConnectorMetadataUpdateHandleSerde<ConnectorMetadataUpdateHandle> connectorMetadataUpdateHandleSerde = new ConnectorMetadataUpdateHandleSerde<>(thriftCodecManager, thriftProtocol);
+        return metadataUpdateHandles.stream()
+                .map(e -> connectorMetadataUpdateHandleSerde.deSerialize(handleResolver.getMetadataUpdateHandleClass(e.getId()), e.getBytes()))
+                .collect(toList());
     }
 
     @Override
