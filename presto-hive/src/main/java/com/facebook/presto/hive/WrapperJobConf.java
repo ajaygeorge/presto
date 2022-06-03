@@ -31,7 +31,7 @@ public class WrapperJobConf
 
     public WrapperJobConf(Configuration config)
     {
-        super();
+        super(config);
         this.config = requireNonNull(config, "config is null");
     }
 
