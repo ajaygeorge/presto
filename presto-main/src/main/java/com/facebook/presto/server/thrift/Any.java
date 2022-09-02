@@ -17,6 +17,8 @@ import com.facebook.drift.annotations.ThriftConstructor;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftStruct;
 
+import java.util.Arrays;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -48,5 +50,14 @@ public class Any
     public byte[] getBytes()
     {
         return bytes;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Any{" +
+                "id='" + id + '\'' +
+                ", bytes=" + Arrays.toString(bytes) +
+                '}';
     }
 }

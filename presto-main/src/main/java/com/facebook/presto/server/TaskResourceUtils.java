@@ -251,7 +251,7 @@ public class TaskResourceUtils
                 convertToOperatorInfoUnion(operatorStats.getInfo()));
     }
 
-    private static MetadataUpdates convertToThriftMetadataUpdates(
+    public static MetadataUpdates convertToThriftMetadataUpdates(
             MetadataUpdates metadataUpdates,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             HandleResolver handleResolver)

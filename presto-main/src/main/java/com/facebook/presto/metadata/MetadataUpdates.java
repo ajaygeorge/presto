@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.metadata;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.drift.annotations.ThriftConstructor;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftStruct;
@@ -33,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 public class MetadataUpdates
 {
     public static final MetadataUpdates DEFAULT_METADATA_UPDATES = new MetadataUpdates(null, ImmutableList.of());
+    private static final Logger log = Logger.get(MetadataUpdates.class);
 
     private final ConnectorId connectorId;
     private List<ConnectorMetadataUpdateHandle> metadataUpdates;
@@ -58,6 +60,15 @@ public class MetadataUpdates
     @ThriftConstructor
     public MetadataUpdates(@Nullable ConnectorId connectorId, List<Any> metadataUpdatesAny, boolean dummy)
     {
+        if (metadataUpdatesAny == null) {
+            log.error("Metadata Updates Null");
+            if (connectorId != null) {
+                log.error("ConnectorId %s, dummy %b", connectorId, dummy);
+            }
+            else {
+                log.error("ConnectorId is Null");
+            }
+        }
         this.connectorId = connectorId;
         this.metadataUpdatesAny = ImmutableList.copyOf(requireNonNull(metadataUpdatesAny, "metadataUpdatesAny is null"));
         this.dummy = dummy;
@@ -86,5 +97,16 @@ public class MetadataUpdates
     public boolean getDummy()
     {
         return dummy;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "MetadataUpdates{" +
+                "connectorId=" + connectorId +
+                ", metadataUpdates=" + metadataUpdates +
+                ", metadataUpdatesAny=" + metadataUpdatesAny +
+                ", dummy=" + dummy +
+                '}';
     }
 }

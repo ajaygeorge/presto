@@ -23,12 +23,15 @@ import com.facebook.drift.protocol.TProtocol;
 import com.facebook.drift.protocol.TTransport;
 import com.facebook.drift.transport.netty.codec.Protocol;
 import com.facebook.presto.metadata.HandleResolver;
+import com.facebook.presto.metadata.MetadataUpdates;
 import com.facebook.presto.server.ConnectorMetadataUpdateHandleJsonSerde;
+import com.facebook.presto.server.TaskResourceUtils;
 import com.facebook.presto.server.thrift.Any;
 import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 import com.facebook.presto.spi.ConnectorTypeSerde;
 import com.facebook.presto.testing.TestingHandleResolver;
 import com.facebook.presto.testing.TestingMetadataUpdateHandle;
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -62,6 +65,20 @@ public class TestTaskWithConnectorTypeSerde
                 {REFLECTION_CODEC_MANAGER, COMPILER_CODEC_MANAGER},
                 {REFLECTION_CODEC_MANAGER, REFLECTION_CODEC_MANAGER}
         };
+    }
+
+    @Test(dataProvider = "codecCombinations")
+    public void testRoundTripSerializeMetadataUpdates(ThriftCodecManager readCodecManager, ThriftCodecManager writeCodecManager)
+            throws Exception
+    {
+        MetadataUpdates metadataUpdates = new MetadataUpdates(null, ImmutableList.of());
+        MetadataUpdates thriftMetadataUpdates = TaskResourceUtils.convertToThriftMetadataUpdates(metadataUpdates, null, handleResolver);
+        TProtocol protocol = new TBinaryProtocol(transport);
+        ThriftCodec<MetadataUpdates> writeCodec = writeCodecManager.getCodec(MetadataUpdates.class);
+        writeCodec.write(thriftMetadataUpdates, protocol);
+        ThriftCodec<MetadataUpdates> readCodec = readCodecManager.getCodec(MetadataUpdates.class);
+        MetadataUpdates read = readCodec.read(protocol);
+        assertEquals(read, thriftMetadataUpdates);
     }
 
     @Test(dataProvider = "codecCombinations")

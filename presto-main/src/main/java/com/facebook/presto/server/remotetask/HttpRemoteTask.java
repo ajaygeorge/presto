@@ -296,7 +296,7 @@ public final class HttpRemoteTask
             this.taskInfoJsonCodec = taskInfoJsonCodec;
             this.taskUpdateRequestCodec = taskUpdateRequestCodec;
             this.planFragmentCodec = planFragmentCodec;
-            this.updateErrorTracker = taskRequestErrorTracker(taskId, location, maxErrorDuration, errorScheduledExecutor, "updating task");
+            this.updateErrorTracker = taskRequestErrorTracker(taskId, location, maxErrorDuration, errorScheduledExecutor, "updating task", "UPDATE");
             this.nodeStatsTracker = requireNonNull(nodeStatsTracker, "nodeStatsTracker is null");
             this.maxErrorDuration = maxErrorDuration;
             this.stats = stats;
@@ -528,7 +528,8 @@ public final class HttpRemoteTask
                 remoteSourceUri,
                 maxErrorDuration,
                 errorScheduledExecutor,
-                "Remove exchange remote source");
+                "Remove exchange remote source",
+                "DELETE");
 
         SettableFuture<?> future = SettableFuture.create();
         doRemoveRemoteSource(errorTracker, request, future);
@@ -918,7 +919,7 @@ public final class HttpRemoteTask
             }
 
             // send cancel to task and ignore response
-            HttpUriBuilder uriBuilder = getHttpUriBuilder(taskStatus).addParameter("abort", "false");
+            HttpUriBuilder uriBuilder = getHttpUriBuilder(taskStatus).addParameter("abort", "false").addParameter("delete", "cancel");
             Request.Builder builder = setContentTypeHeaders(binaryTransportEnabled, prepareDelete());
             if (taskInfoThriftTransportEnabled) {
                 builder = ThriftRequestUtils.prepareThriftDelete(thriftProtocol);
@@ -957,6 +958,7 @@ public final class HttpRemoteTask
         Request.Builder requestBuilder = setContentTypeHeaders(binaryTransportEnabled, prepareDelete());
         if (taskInfoThriftTransportEnabled) {
             requestBuilder = ThriftRequestUtils.prepareThriftDelete(Protocol.BINARY);
+            requestBuilder.addHeader("delete", "cleanUpTask");
         }
         Request request = requestBuilder
                 .setUri(uriBuilder.build())
@@ -987,6 +989,7 @@ public final class HttpRemoteTask
             Request.Builder builder = setContentTypeHeaders(binaryTransportEnabled, prepareDelete());
             if (taskInfoThriftTransportEnabled) {
                 builder = ThriftRequestUtils.prepareThriftDelete(thriftProtocol);
+                builder.addHeader("delete", "abort");
             }
 
             Request request = builder.setUri(uriBuilder.build())

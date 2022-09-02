@@ -24,6 +24,7 @@ import com.facebook.airlift.http.client.thrift.ThriftResponseHandler;
 import com.facebook.airlift.json.Codec;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.json.smile.SmileCodec;
+import com.facebook.airlift.log.Logger;
 import com.facebook.drift.transport.netty.codec.Protocol;
 import com.facebook.presto.Session;
 import com.facebook.presto.connector.ConnectorTypeSerdeManager;
@@ -78,6 +79,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class TaskInfoFetcher
         implements SimpleHttpResponseCallback<TaskInfo>
 {
+    private static final Logger log = Logger.get(TaskInfoFetcher.class);
     private final TaskId taskId;
     private final Consumer<Throwable> onFail;
     private final StateMachine<TaskInfo> taskInfo;
@@ -160,7 +162,7 @@ public class TaskInfoFetcher
         this.updateIntervalMillis = requireNonNull(updateInterval, "updateInterval is null").toMillis();
         this.taskInfoRefreshMaxWait = requireNonNull(taskInfoRefreshMaxWait, "taskInfoRefreshMaxWait is null");
         this.updateScheduledExecutor = requireNonNull(updateScheduledExecutor, "updateScheduledExecutor is null");
-        this.errorTracker = taskRequestErrorTracker(taskId, initialTask.getTaskStatus().getSelf(), maxErrorDuration, errorScheduledExecutor, "getting info for task");
+        this.errorTracker = taskRequestErrorTracker(taskId, initialTask.getTaskStatus().getSelf(), maxErrorDuration, errorScheduledExecutor, "getting info for task", "GET");
 
         this.summarizeTaskInfo = summarizeTaskInfo;
 
@@ -338,6 +340,7 @@ public class TaskInfoFetcher
     public void success(TaskInfo newValue)
     {
         try (SetThreadName ignored = new SetThreadName("TaskInfoFetcher-%s", taskId)) {
+            log.info("Task Info Success");
             lastUpdateNanos.set(System.nanoTime());
 
             long startNanos;
@@ -362,6 +365,7 @@ public class TaskInfoFetcher
             try {
                 // if task not already done, record error
                 if (!isDone(getTaskInfo())) {
+                    log.error("TaskInfo call Failure");
                     errorTracker.requestFailed(cause);
                 }
             }
@@ -379,6 +383,7 @@ public class TaskInfoFetcher
     public void fatal(Throwable cause)
     {
         try (SetThreadName ignored = new SetThreadName("TaskInfoFetcher-%s", taskId)) {
+            log.info("Task Info Failure");
             onFail.accept(cause);
         }
     }

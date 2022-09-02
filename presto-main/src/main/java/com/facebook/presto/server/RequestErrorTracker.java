@@ -59,10 +59,19 @@ public class RequestErrorTracker
     private final ScheduledExecutorService scheduledExecutor;
     private final String jobDescription;
     private final Backoff backoff;
+    private final String action;
 
     private final Queue<Throwable> errorsSinceLastSuccess = new ConcurrentLinkedQueue<>();
 
-    private RequestErrorTracker(Object id, URI uri, ErrorCodeSupplier errorCode, String nodeErrorMessage, Duration maxErrorDuration, ScheduledExecutorService scheduledExecutor, String jobDescription)
+    private RequestErrorTracker(
+            Object id,
+            URI uri,
+            ErrorCodeSupplier errorCode,
+            String nodeErrorMessage,
+            Duration maxErrorDuration,
+            ScheduledExecutorService scheduledExecutor,
+            String jobDescription,
+            String action)
     {
         this.id = requireNonNull(id, "id is null");
         this.uri = requireNonNull(uri, "uri is null");
@@ -71,11 +80,18 @@ public class RequestErrorTracker
         this.scheduledExecutor = requireNonNull(scheduledExecutor, "scheduledExecutor is null");
         this.backoff = new Backoff(requireNonNull(maxErrorDuration, "maxErrorDuration is null"));
         this.jobDescription = requireNonNull(jobDescription, "jobDescription is null");
+        this.action = requireNonNull(action, "action is null");
     }
 
-    public static RequestErrorTracker taskRequestErrorTracker(TaskId taskId, URI taskUri, Duration maxErrorDuration, ScheduledExecutorService scheduledExecutor, String jobDescription)
+    public static RequestErrorTracker taskRequestErrorTracker(
+            TaskId taskId,
+            URI taskUri,
+            Duration maxErrorDuration,
+            ScheduledExecutorService scheduledExecutor,
+            String jobDescription,
+            String action)
     {
-        return new RequestErrorTracker(taskId, taskUri, REMOTE_TASK_ERROR, WORKER_NODE_ERROR, maxErrorDuration, scheduledExecutor, jobDescription);
+        return new RequestErrorTracker(taskId, taskUri, REMOTE_TASK_ERROR, WORKER_NODE_ERROR, maxErrorDuration, scheduledExecutor, jobDescription, action);
     }
 
     public ListenableFuture<?> acquireRequestPermit()
@@ -129,10 +145,10 @@ public class RequestErrorTracker
         // log failure message
         if (isExpectedError(reason)) {
             // don't print a stack for a known errors
-            log.warn("Error " + jobDescription + " %s: %s: %s", id, reason.getMessage(), uri);
+            log.warn("Error " + jobDescription + " %s: %s: %s %s", id, reason.getMessage(), uri, action);
         }
         else {
-            log.warn(reason, "Error " + jobDescription + " %s: %s", id, uri);
+            log.warn(reason, "Error " + jobDescription + " %s: %s %s", id, uri, action);
         }
 
         // remember the first 10 errors

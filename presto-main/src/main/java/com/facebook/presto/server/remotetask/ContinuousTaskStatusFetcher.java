@@ -118,7 +118,7 @@ class ContinuousTaskStatusFetcher
         this.executor = requireNonNull(executor, "executor is null");
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
 
-        this.errorTracker = taskRequestErrorTracker(taskId, initialTaskStatus.getSelf(), maxErrorDuration, errorScheduledExecutor, "getting task status");
+        this.errorTracker = taskRequestErrorTracker(taskId, initialTaskStatus.getSelf(), maxErrorDuration, errorScheduledExecutor, "getting task status", "GET");
         this.stats = requireNonNull(stats, "stats is null");
         this.binaryTransportEnabled = binaryTransportEnabled;
         this.thriftTransportEnabled = thriftTransportEnabled;

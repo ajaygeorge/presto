@@ -17,6 +17,7 @@ import com.facebook.airlift.concurrent.BoundedExecutor;
 import com.facebook.airlift.json.Codec;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.json.smile.SmileCodec;
+import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.TimeStat;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.Page;
@@ -102,6 +103,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class TaskResource
 {
     private static final Duration ADDITIONAL_WAIT_TIME = new Duration(5, SECONDS);
+    private static final Logger log = Logger.get(TaskResource.class);
 
     private final TaskManager taskManager;
     private final SessionPropertyManager sessionPropertyManager;
@@ -150,9 +152,11 @@ public class TaskResource
     @Path("{taskId}")
     @Consumes({APPLICATION_JSON, APPLICATION_JACKSON_SMILE})
     @Produces({APPLICATION_JSON, APPLICATION_JACKSON_SMILE})
-    public Response createOrUpdateTask(@PathParam("taskId") TaskId taskId, TaskUpdateRequest taskUpdateRequest, @Context UriInfo uriInfo)
+    public Response createOrUpdateTask(@PathParam("taskId") TaskId taskId, TaskUpdateRequest taskUpdateRequest, @Context UriInfo uriInfo, @Context HttpHeaders httpHeaders)
     {
         requireNonNull(taskUpdateRequest, "taskUpdateRequest is null");
+        boolean isThriftRequest = isThriftRequest(httpHeaders);
+        log.info("Received Task Update Request call for Task %s isThriftRequest %b", taskId, isThriftRequest);
 
         Session session = taskUpdateRequest.getSession().toSession(sessionPropertyManager, taskUpdateRequest.getExtraCredentials());
         TaskInfo taskInfo = taskManager.updateTask(session,
@@ -184,6 +188,7 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
 
         boolean isThriftRequest = isThriftRequest(httpHeaders);
+        log.info("Received Task Info call for Task %s isThriftRequest %b currentState %s maxWait %s", taskId, isThriftRequest, currentState, maxWait);
 
         if (currentState == null || maxWait == null) {
             TaskInfo taskInfo = taskManager.getTaskInfo(taskId);
@@ -192,19 +197,45 @@ public class TaskResource
             }
 
             if (isThriftRequest) {
+                log.info("Branch 1 : Writing Thrift Task Info for Task %s", taskId);
+                log.info("Branch 1 : Before conversion Task Info for Task %s MetadataUpdates %s", taskId, taskInfo.getMetadataUpdates());
                 taskInfo = convertToThriftTaskInfo(taskInfo, connectorTypeSerdeManager, handleResolver);
+                log.info("Branch 1 : After conversion Task Info for Task %s MetadataUpdates %s", taskId, taskInfo.getMetadataUpdates());
+                if (taskInfo.getMetadataUpdates().getMetadataUpdatesAny() == null) {
+                    log.error("Branch 1 : Writing null metadataUpdatesAny for Task %s", taskId);
+                }
             }
+            else {
+                log.info("Branch 1 : Task Info for Task %s MetadataUpdates %s", taskId, taskInfo.getMetadataUpdates());
+            }
+
             asyncResponse.resume(taskInfo);
             return;
         }
 
         Duration waitTime = randomizeWaitTime(maxWait);
+        ListenableFuture<TaskInfo> taskInfo2 = taskManager.getTaskInfo(taskId, currentState);
+        if (isThriftRequest) {
+            log.info("Branch 2 : Writing Thrift Task Info for Task %s", taskId);
+            taskInfo2 = Futures.transform(
+                    taskInfo2,
+                    taskinfoLambda -> convertToThriftTaskInfo(taskinfoLambda, connectorTypeSerdeManager, handleResolver),
+                    directExecutor());
+        }
+
         ListenableFuture<TaskInfo> futureTaskInfo = addTimeout(
-                taskManager.getTaskInfo(taskId, currentState),
+                taskInfo2,
                 () -> {
                     TaskInfo taskInfo = taskManager.getTaskInfo(taskId);
                     if (isThriftRequest) {
-                        return convertToThriftTaskInfo(taskInfo, connectorTypeSerdeManager, handleResolver);
+                        log.info("Branch 3 : Writing Thrift Task Info for Task %s", taskId);
+                        log.info("Branch 3 : Before conversion Task Info for Task %s MetadataUpdates %s", taskId, taskInfo.getMetadataUpdates());
+                        TaskInfo taskInfo1 = convertToThriftTaskInfo(taskInfo, connectorTypeSerdeManager, handleResolver);
+                        log.info("Branch 3 : After conversion Task Info for Task %s MetadataUpdates %s", taskId, taskInfo1.getMetadataUpdates());
+                        if (taskInfo1.getMetadataUpdates().getMetadataUpdatesAny() == null) {
+                            log.error("Branch 3 : Writing null metadataUpdatesAny for Task %s", taskId);
+                        }
+                        return taskInfo1;
                     }
                     else {
                         return taskInfo;
@@ -293,7 +324,15 @@ public class TaskResource
         }
 
         if (isThriftRequest(httpHeaders)) {
+            log.info("Delete: Writing Thrift Task Info for Task %s", taskId);
+            List<String> deleteHeaders = httpHeaders.getRequestHeader("delete");
+            log.info("Delete: Delete headers from client for Task %s %s", taskId, deleteHeaders);
+            log.info("Delete: before conversion MetadataUpdates for Task %s %s ", taskId, taskInfo.getMetadataUpdates());
             taskInfo = convertToThriftTaskInfo(taskInfo, connectorTypeSerdeManager, handleResolver);
+            log.info("Delete: after conversion MetadataUpdates for Task %s %s ", taskId, taskInfo.getMetadataUpdates());
+            if (taskInfo.getMetadataUpdates().getMetadataUpdatesAny() == null) {
+                log.error("Delete : Writing null metadataUpdatesAny for Task %s", taskId);
+            }
         }
 
         return taskInfo;

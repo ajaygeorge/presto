@@ -38,7 +38,7 @@ public class InternalCommunicationConfig
     private boolean kerberosUseCanonicalHostname = true;
     private boolean binaryTransportEnabled;
     private boolean thriftTransportEnabled;
-    private boolean taskInfoThriftTransportEnabled;
+    private boolean taskInfoThriftTransportEnabled = true;
     private Protocol thriftProtocol = Protocol.BINARY;
     private DataSize maxTaskUpdateSize = new DataSize(16, MEGABYTE);
     private CommunicationProtocol taskCommunicationProtocol = CommunicationProtocol.HTTP;
