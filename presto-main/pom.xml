@@ -17,6 +17,21 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.facebook.thrift.lib.java</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0-202209120759-07c57eec3cf2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.thrift.lib.java</groupId>
+            <artifactId>guice</artifactId>
+            <version>1.0-202209120759-07c57eec3cf2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.thrift.lib.java</groupId>
+            <artifactId>runtime</artifactId>
+            <version>1.0-202209120759-07c57eec3cf2</version>
+        </dependency>
+        <dependency>
             <groupId>com.esri.geometry</groupId>
             <artifactId>esri-geometry-api</artifactId>
         </dependency>
@@ -474,10 +489,74 @@
             <artifactId>ratis-common</artifactId>
             <optional>true</optional>
         </dependency>
+        <!--
+        fb thrift maven plugin dependency
+        <dependency>
+            <groupId>com.facebook</groupId>
+            <artifactId>thrift</artifactId>
+            <version>12.0-202007130921-ead26c0722ee</version>
+        </dependency>
+        -->
+
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>com.facebook.mojo</groupId>
+                <artifactId>fbthrift-maven-plugin</artifactId>
+                <version>2.2-SNAPSHOT</version>
+                <configuration>
+                    <compiler>
+                        <extraOptions>
+                            <option>-allow-neg-keys</option>
+                            <option>-r</option>
+                        </extraOptions>
+                    </compiler>
+                    <baseDirectory>${project.basedir}</baseDirectory>
+                    <sources>
+                        <param>src/main/resources/com/facebook/presto/ping/ping.thrift</param>
+                    </sources>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>thrift-generate-sources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/gen-java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <configuration>
+                    <ignoredUnusedDeclaredDependencies>
+                        <ignoredUnusedDeclaredDependency>org.apache.thrift:libthrift</ignoredUnusedDeclaredDependency>
+                        <ignoredUnusedDeclaredDependency>com.facebook:thrift</ignoredUnusedDeclaredDependency>
+                        <ignoredUnusedDeclaredDependency>javax.servlet:javax.servlet-api</ignoredUnusedDeclaredDependency>
+                        <ignoredUnusedDeclaredDependency>org.slf4j:slf4j-api</ignoredUnusedDeclaredDependency>
+                        <ignoredUnusedDeclaredDependency>commons-codec:commons-codec</ignoredUnusedDeclaredDependency>
+                    </ignoredUnusedDeclaredDependencies>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.basepom.maven</groupId>
                 <artifactId>duplicate-finder-maven-plugin</artifactId>
