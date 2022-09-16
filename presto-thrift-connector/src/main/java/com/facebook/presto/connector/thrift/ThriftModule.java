@@ -53,6 +53,8 @@ public class ThriftModule
         driftClientBinder(binder)
                 .bindDriftClient(PrestoThriftService.class)
                 .withExceptionClassifier(t -> {
+                    System.out.println("Error received from Thrift");
+                    t.printStackTrace();
                     if (t instanceof PrestoThriftServiceException) {
                         boolean retryable = ((PrestoThriftServiceException) t).isRetryable();
                         return new ExceptionClassification(Optional.of(retryable), HostStatus.NORMAL);

@@ -32,8 +32,9 @@ public final class ThriftExceptions
 {
     private ThriftExceptions() {}
 
-    public static PrestoException toPrestoException(Exception e)
+    public static PrestoException toPrestoException(Exception e, String method)
     {
+        System.out.printf("Method invoked is %s%n", method);
         if ((e instanceof TTransportException) && "No hosts available".equals(e.getMessage())) {
             throw new PrestoException(THRIFT_SERVICE_NO_AVAILABLE_HOSTS, e);
         }
@@ -46,8 +47,8 @@ public final class ThriftExceptions
         throw new PrestoException(GENERIC_INTERNAL_ERROR, e);
     }
 
-    public static <T> ListenableFuture<T> catchingThriftException(ListenableFuture<T> future)
+    public static <T> ListenableFuture<T> catchingThriftException(ListenableFuture<T> future, String method)
     {
-        return catchingAsync(future, Exception.class, e -> immediateFailedFuture(toPrestoException(e)), directExecutor());
+        return catchingAsync(future, Exception.class, e -> immediateFailedFuture(toPrestoException(e, method)), directExecutor());
     }
 }

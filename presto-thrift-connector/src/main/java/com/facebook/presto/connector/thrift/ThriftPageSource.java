@@ -175,7 +175,7 @@ public class ThriftPageSource
                 columnNames,
                 maxBytesPerResponse,
                 new PrestoThriftNullableToken(nextToken));
-        rowsBatchFuture = catchingThriftException(rowsBatchFuture);
+        rowsBatchFuture = catchingThriftException(rowsBatchFuture, "getRows");
         rowsBatchFuture.addListener(() -> readTimeNanos.addAndGet(System.nanoTime() - start), directExecutor());
         return toCompletableFuture(nonCancellationPropagating(rowsBatchFuture));
     }

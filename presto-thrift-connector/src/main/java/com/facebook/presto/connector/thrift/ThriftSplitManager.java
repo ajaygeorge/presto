@@ -152,7 +152,7 @@ public class ThriftSplitManager
                         checkState(hasMoreData.compareAndSet(true, nextToken.get() != null));
                         return new ConnectorSplitBatch(splits, isFinished());
                     }, directExecutor());
-            resultFuture = catchingThriftException(resultFuture);
+            resultFuture = catchingThriftException(resultFuture, "getSplits");
             future.set(resultFuture);
             return toCompletableFuture(resultFuture);
         }

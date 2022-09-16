@@ -304,7 +304,7 @@ public class ThriftIndexPageSource
                 outputConstraint,
                 MAX_SPLIT_COUNT,
                 new PrestoThriftNullableToken(nextToken));
-        future = catchingThriftException(future);
+        future = catchingThriftException(future, "getIndexSplits");
         future.addListener(() -> readTimeNanos.addAndGet(System.nanoTime() - start), directExecutor());
         return future;
     }
@@ -317,7 +317,7 @@ public class ThriftIndexPageSource
                 outputColumnNames,
                 maxBytesPerResponse,
                 new PrestoThriftNullableToken(nextToken));
-        future = catchingThriftException(future);
+        future = catchingThriftException(future, "getRows");
         future.addListener(() -> readTimeNanos.addAndGet(System.nanoTime() - start), directExecutor());
         dataRequests.add(future);
         contexts.put(future, context);

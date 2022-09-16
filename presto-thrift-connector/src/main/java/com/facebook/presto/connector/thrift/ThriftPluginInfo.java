@@ -16,6 +16,7 @@ package com.facebook.presto.connector.thrift;
 import com.facebook.presto.thrift.api.connector.PrestoThriftService;
 import com.google.inject.Module;
 
+import static com.facebook.drift.client.ExceptionClassification.NORMAL_EXCEPTION;
 import static com.facebook.drift.client.guice.DriftClientBinder.driftClientBinder;
 import static com.facebook.presto.connector.thrift.location.ExtendedSimpleAddressSelectorBinder.extendedSimpleAddressSelector;
 import static com.google.inject.Scopes.SINGLETON;
@@ -33,6 +34,11 @@ public class ThriftPluginInfo
             binder.bind(ThriftHeaderProvider.class).to(DefaultThriftHeaderProvider.class).in(SINGLETON);
             driftClientBinder(binder)
                     .bindDriftClient(PrestoThriftService.class)
+                    .withExceptionClassifier(t -> {
+                        System.out.println("Error received from Thrift");
+                        t.printStackTrace();
+                        return NORMAL_EXCEPTION;
+                    })
                     .withAddressSelector(extendedSimpleAddressSelector());
         };
     }

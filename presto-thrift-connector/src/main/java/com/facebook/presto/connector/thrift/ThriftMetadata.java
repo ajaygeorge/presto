@@ -97,7 +97,7 @@ public class ThriftMetadata
             return client.get(thriftHeaderProvider.getHeaders(session)).listSchemaNames();
         }
         catch (PrestoThriftServiceException | TException e) {
-            throw toPrestoException(e);
+            throw toPrestoException(e, "listSchemaNames");
         }
     }
 
@@ -148,7 +148,7 @@ public class ThriftMetadata
                     .collect(toImmutableList());
         }
         catch (PrestoThriftServiceException | TException e) {
-            throw toPrestoException(e);
+            throw toPrestoException(e, "listTables");
         }
     }
 
@@ -224,7 +224,7 @@ public class ThriftMetadata
             return client.get().getTableMetadata(name);
         }
         catch (PrestoThriftServiceException | TException e) {
-            throw toPrestoException(e);
+            throw toPrestoException(e, "getTableMetadata");
         }
     }
 }

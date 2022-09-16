@@ -34,6 +34,7 @@ public class ExtendedSimpleAddressSelector
     public ExtendedSimpleAddressSelector(AddressSelector<SimpleAddress> delegate)
     {
         this.delegate = requireNonNull(delegate, "delegate is null");
+        System.out.printf("Init complete with delegate %s %n", delegate);
     }
 
     @Override
@@ -45,6 +46,7 @@ public class ExtendedSimpleAddressSelector
     @Override
     public Optional<SimpleAddress> selectAddress(Optional<String> context, Set<SimpleAddress> attempted)
     {
+        System.out.printf("Context %s attempted %s%n", context, attempted);
         if (!context.isPresent()) {
             return delegate.selectAddress(context, attempted);
         }
