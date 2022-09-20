@@ -58,6 +58,7 @@ public class ThriftModule
                     // and dies before sending a response.
                     if (t instanceof TApplicationException
                             && t.getMessage().contains("server shutting down")) {
+                        System.out.println("Received Exception. HappyNewYear");
                         return new ExceptionClassification(Optional.of(true), HostStatus.DOWN);
                     }
                     else if (t instanceof PrestoThriftServiceException) {
