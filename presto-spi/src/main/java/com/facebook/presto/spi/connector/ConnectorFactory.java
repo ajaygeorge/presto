@@ -24,4 +24,9 @@ public interface ConnectorFactory
     ConnectorHandleResolver getHandleResolver();
 
     Connector create(String catalogName, Map<String, String> config, ConnectorContext context);
+
+    default Connector create(String catalogName, Map<String, String> config, ConnectorContext context, Map<String, Object> globalMap)
+    {
+        return create(catalogName, config, context);
+    }
 }

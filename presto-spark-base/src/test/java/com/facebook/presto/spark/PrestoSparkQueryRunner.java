@@ -290,7 +290,7 @@ public class PrestoSparkQueryRunner
 
         // Install tpch Plugin
         pluginManager.installPlugin(new TpchPlugin());
-        connectorManager.createConnection("tpch", "tpch", ImmutableMap.of());
+        connectorManager.createConnection("tpch", "tpch", ImmutableMap.of(), ImmutableMap.of());
 
         // Install Hive Plugin
         File baseDir;
@@ -318,7 +318,7 @@ public class PrestoSparkQueryRunner
                 .put("hive.allow-add-column", "true")
                 .put("hive.allow-drop-column", "true").build();
 
-        connectorManager.createConnection("hive", "hive", properties);
+        connectorManager.createConnection("hive", "hive", properties, ImmutableMap.of());
 
         metadata.registerBuiltInFunctions(AbstractTestQueries.CUSTOM_FUNCTIONS);
         metadata.getFunctionAndTypeManager().addFunctionNamespace(
@@ -554,7 +554,7 @@ public class PrestoSparkQueryRunner
     @Override
     public void createCatalog(String catalogName, String connectorName, Map<String, String> properties)
     {
-        connectorManager.createConnection(catalogName, connectorName, properties);
+        connectorManager.createConnection(catalogName, connectorName, properties, ImmutableMap.of());
     }
 
     @Override

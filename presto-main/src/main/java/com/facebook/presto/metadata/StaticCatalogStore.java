@@ -65,10 +65,10 @@ public class StaticCatalogStore
     public void loadCatalogs()
             throws Exception
     {
-        loadCatalogs(ImmutableMap.of());
+        loadCatalogs(ImmutableMap.of(), ImmutableMap.of());
     }
 
-    public void loadCatalogs(Map<String, Map<String, String>> additionalCatalogs)
+    public void loadCatalogs(Map<String, Map<String, String>> additionalCatalogs, Map<String, Object> globalMap)
             throws Exception
     {
         if (!catalogsLoading.compareAndSet(false, true)) {
@@ -77,16 +77,18 @@ public class StaticCatalogStore
 
         for (File file : listFiles(catalogConfigurationDir)) {
             if (file.isFile() && file.getName().endsWith(".properties")) {
-                loadCatalog(file);
+                loadCatalog(file, globalMap);
             }
         }
 
-        additionalCatalogs.forEach(this::loadCatalog);
+        for (Entry<String, Map<String, String>> entry : additionalCatalogs.entrySet()) {
+            loadCatalog(entry.getKey(), entry.getValue(), globalMap);
+        }
 
         catalogsLoaded.set(true);
     }
 
-    private void loadCatalog(File file)
+    private void loadCatalog(File file, Map<String, Object> globalMap)
             throws Exception
     {
         String catalogName = Files.getNameWithoutExtension(file.getName());
@@ -95,10 +97,10 @@ public class StaticCatalogStore
         Map<String, String> properties = loadProperties(file);
         checkState(properties.containsKey("connector.name"), "Catalog configuration %s does not contain connector.name", file.getAbsoluteFile());
 
-        loadCatalog(catalogName, properties);
+        loadCatalog(catalogName, properties, globalMap);
     }
 
-    private void loadCatalog(String catalogName, Map<String, String> properties)
+    private void loadCatalog(String catalogName, Map<String, String> properties, Map<String, Object> globalMap)
     {
         if (disabledCatalogs.contains(catalogName)) {
             log.info("Skipping disabled catalog %s", catalogName);
@@ -120,7 +122,7 @@ public class StaticCatalogStore
 
         checkState(connectorName != null, "Configuration for catalog %s does not contain connector.name", catalogName);
 
-        connectorManager.createConnection(catalogName, connectorName, connectorProperties.build());
+        connectorManager.createConnection(catalogName, connectorName, connectorProperties.build(), globalMap);
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
     }
 

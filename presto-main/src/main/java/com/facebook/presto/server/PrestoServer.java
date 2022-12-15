@@ -59,6 +59,7 @@ import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import org.weakref.jmx.guice.MBeanModule;
@@ -148,7 +149,7 @@ public class PrestoServer
             ServerConfig serverConfig = injector.getInstance(ServerConfig.class);
 
             if (!serverConfig.isResourceManager()) {
-                injector.getInstance(StaticCatalogStore.class).loadCatalogs();
+                injector.getInstance(StaticCatalogStore.class).loadCatalogs(ImmutableMap.of(), getGlobalMap(injector));
             }
 
             // TODO: remove this huge hack
@@ -192,6 +193,11 @@ public class PrestoServer
     protected Iterable<? extends Module> getAdditionalModules()
     {
         return ImmutableList.of();
+    }
+
+    protected Map<String, Object> getGlobalMap(Injector injector)
+    {
+        return ImmutableMap.of();
     }
 
     protected void startAssociatedProcesses(Injector injector)

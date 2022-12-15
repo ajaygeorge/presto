@@ -173,7 +173,7 @@ public class PrestoSparkInjectorFactory
 
         try {
             injector.getInstance(PluginManager.class).loadPlugins();
-            injector.getInstance(StaticCatalogStore.class).loadCatalogs(catalogProperties);
+            injector.getInstance(StaticCatalogStore.class).loadCatalogs(catalogProperties, ImmutableMap.of());
             injector.getInstance(ResourceGroupManager.class).loadConfigurationManager();
             injector.getInstance(PasswordAuthenticatorManager.class).loadPasswordAuthenticator();
             eventListenerProperties.ifPresent(properties -> injector.getInstance(EventListenerManager.class).loadConfiguredEventListener(properties));

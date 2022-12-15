@@ -92,7 +92,7 @@ public class SystemConnectorModule
         public SystemConnectorRegistrar(ConnectorManager manager, GlobalSystemConnectorFactory globalSystemConnectorFactory)
         {
             manager.addConnectorFactory(globalSystemConnectorFactory);
-            manager.createConnection(GlobalSystemConnector.NAME, GlobalSystemConnector.NAME, ImmutableMap.of());
+            manager.createConnection(GlobalSystemConnector.NAME, GlobalSystemConnector.NAME, ImmutableMap.of(), ImmutableMap.of());
         }
     }
 }

@@ -485,7 +485,7 @@ public class LocalQueryRunner
                 new TracerProviderManager(new TracingConfig()));
 
         connectorManager.addConnectorFactory(globalSystemConnectorFactory);
-        connectorManager.createConnection(GlobalSystemConnector.NAME, GlobalSystemConnector.NAME, ImmutableMap.of());
+        connectorManager.createConnection(GlobalSystemConnector.NAME, GlobalSystemConnector.NAME, ImmutableMap.of(), ImmutableMap.of());
 
         // add bogus connector for testing session properties
         catalogManager.registerCatalog(createBogusTestingCatalog(TESTING_CATALOG));
@@ -671,7 +671,7 @@ public class LocalQueryRunner
     {
         nodeManager.addCurrentNodeConnector(new ConnectorId(catalogName));
         connectorManager.addConnectorFactory(connectorFactory);
-        connectorManager.createConnection(catalogName, connectorFactory.getName(), properties);
+        connectorManager.createConnection(catalogName, connectorFactory.getName(), properties, ImmutableMap.of());
     }
 
     @Override

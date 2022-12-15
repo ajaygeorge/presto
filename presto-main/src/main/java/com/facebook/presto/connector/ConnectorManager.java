@@ -205,15 +205,15 @@ public class ConnectorManager
         handleResolver.addConnectorName(connectorFactory.getName(), connectorFactory.getHandleResolver());
     }
 
-    public synchronized ConnectorId createConnection(String catalogName, String connectorName, Map<String, String> properties)
+    public synchronized ConnectorId createConnection(String catalogName, String connectorName, Map<String, String> properties, Map<String, Object> globalMap)
     {
         requireNonNull(connectorName, "connectorName is null");
         ConnectorFactory connectorFactory = connectorFactories.get(connectorName);
         checkArgument(connectorFactory != null, "No factory for connector %s", connectorName);
-        return createConnection(catalogName, connectorFactory, properties);
+        return createConnection(catalogName, connectorFactory, properties, globalMap);
     }
 
-    private synchronized ConnectorId createConnection(String catalogName, ConnectorFactory connectorFactory, Map<String, String> properties)
+    private synchronized ConnectorId createConnection(String catalogName, ConnectorFactory connectorFactory, Map<String, String> properties, Map<String, Object> globalMap)
     {
         checkState(!stopped.get(), "ConnectorManager is stopped");
         requireNonNull(catalogName, "catalogName is null");
@@ -224,15 +224,15 @@ public class ConnectorManager
         ConnectorId connectorId = new ConnectorId(catalogName);
         checkState(!connectors.containsKey(connectorId), "A connector %s already exists", connectorId);
 
-        addCatalogConnector(catalogName, connectorId, connectorFactory, properties);
+        addCatalogConnector(catalogName, connectorId, connectorFactory, properties, globalMap);
 
         return connectorId;
     }
 
-    private synchronized void addCatalogConnector(String catalogName, ConnectorId connectorId, ConnectorFactory factory, Map<String, String> properties)
+    private synchronized void addCatalogConnector(String catalogName, ConnectorId connectorId, ConnectorFactory factory, Map<String, String> properties, Map<String, Object> globalMap)
     {
         // create all connectors before adding, so a broken connector does not leave the system half updated
-        MaterializedConnector connector = new MaterializedConnector(connectorId, createConnector(connectorId, factory, properties));
+        MaterializedConnector connector = new MaterializedConnector(connectorId, createConnector(connectorId, factory, properties, globalMap));
 
         MaterializedConnector informationSchemaConnector = new MaterializedConnector(
                 createInformationSchemaConnectorId(connectorId),
@@ -366,7 +366,7 @@ public class ConnectorManager
         }
     }
 
-    private Connector createConnector(ConnectorId connectorId, ConnectorFactory factory, Map<String, String> properties)
+    private Connector createConnector(ConnectorId connectorId, ConnectorFactory factory, Map<String, String> properties, Map<String, Object> globalMap)
     {
         ConnectorContext context = new ConnectorContextInstance(
                 new ConnectorAwareNodeManager(nodeManager, nodeInfo.getEnvironment(), connectorId),
@@ -385,7 +385,7 @@ public class ConnectorManager
                 blockEncodingSerde);
 
         try (ThreadContextClassLoader ignored = new ThreadContextClassLoader(factory.getClass().getClassLoader())) {
-            return factory.create(connectorId.getCatalogName(), properties, context);
+            return factory.create(connectorId.getCatalogName(), properties, context, globalMap);
         }
     }
 

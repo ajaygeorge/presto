@@ -509,7 +509,7 @@ public class TestingPrestoServer
 
     public ConnectorId createCatalog(String catalogName, String connectorName, Map<String, String> properties)
     {
-        ConnectorId connectorId = connectorManager.createConnection(catalogName, connectorName, properties);
+        ConnectorId connectorId = connectorManager.createConnection(catalogName, connectorName, properties, ImmutableMap.of());
         if (coordinator && !nodeSchedulerIncludeCoordinator) {
             return connectorId;
         }
