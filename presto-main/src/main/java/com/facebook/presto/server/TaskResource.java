@@ -17,6 +17,7 @@ import com.facebook.airlift.concurrent.BoundedExecutor;
 import com.facebook.airlift.json.Codec;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.json.smile.SmileCodec;
+import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.TimeStat;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.Page;
@@ -112,6 +113,7 @@ public class TaskResource
     private final Codec<PlanFragment> planFragmentCodec;
     private final HandleResolver handleResolver;
     private final ConnectorTypeSerdeManager connectorTypeSerdeManager;
+    private static final Logger log = Logger.get(TaskResource.class);
 
     @Inject
     public TaskResource(
@@ -281,9 +283,11 @@ public class TaskResource
         TaskInfo taskInfo;
 
         if (abort) {
+            log.info("Aborting task {}", taskId);
             taskInfo = taskManager.abortTask(taskId);
         }
         else {
+            log.info("Canceling task {}", taskId);
             taskInfo = taskManager.cancelTask(taskId);
         }
 

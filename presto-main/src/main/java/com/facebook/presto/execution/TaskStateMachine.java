@@ -104,6 +104,7 @@ public class TaskStateMachine
 
     public void failed(Throwable cause)
     {
+        log.info("Task Failed");
         failureCauses.add(cause);
         transitionToDoneState(TaskState.FAILED);
     }

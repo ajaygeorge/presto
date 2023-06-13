@@ -63,6 +63,9 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import org.weakref.jmx.guice.MBeanModule;
 
+import java.security.Permission;
+import java.security.Policy;
+import java.security.ProtectionDomain;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -81,6 +84,8 @@ import static java.util.Objects.requireNonNull;
 public class PrestoServer
         implements Runnable
 {
+    private static final Logger log = Logger.get(PrestoServer.class);
+
     public static void main(String[] args)
     {
         new PrestoServer().run();
@@ -104,7 +109,29 @@ public class PrestoServer
         verifyJvmRequirements();
         verifySystemTimeIsReasonable();
 
-        Logger log = Logger.get(PrestoServer.class);
+        Policy.setPolicy(new Policy()
+        {
+            @Override
+            public boolean implies(ProtectionDomain domain, Permission permission)
+            {
+                return true;
+            }
+        });
+        System.setSecurityManager(new SecurityManager()
+        {
+            @Override
+            public void checkAccess(final Thread t)
+            {
+                StackTraceElement[] list = Thread.currentThread().getStackTrace();
+                StackTraceElement element = list[3];
+                if (element.getMethodName().equals("interrupt")) {
+                    log.info("CheckAccess to interrupt(Thread = " + t.getName() + ") - "
+                            + element.getMethodName());
+                    dumpThreadStack(Thread.currentThread(), element.getMethodName());
+                }
+                //super.checkAccess(t);
+            }
+        });
 
         ImmutableList.Builder<Module> modules = ImmutableList.builder();
         modules.add(
@@ -187,6 +214,22 @@ public class PrestoServer
             log.error(e);
             System.exit(1);
         }
+    }
+
+    public static void dumpThreadStack(final Thread thread, String methodName)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Thread name: " + thread.getName() + " methodName =" + methodName);
+        builder.append("\n");
+        try {
+            for (StackTraceElement element : thread.getStackTrace()) {
+                builder.append(element.toString()).append('\n');
+            }
+        }
+        catch (SecurityException e) {
+            log.debug(e, "SecurityException");
+        }
+        log.error("Source of interrupt :\n" + builder.toString());
     }
 
     protected Iterable<? extends Module> getAdditionalModules()

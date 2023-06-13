@@ -513,6 +513,7 @@ public class Driver
         catch (Throwable t) {
             List<StackTraceElement> interrupterStack = exclusiveLock.getInterrupterStack();
             if (interrupterStack == null) {
+                log.error(t, "Failing Driver interrupterStack is null");
                 driverContext.failed(t);
                 throw t;
             }
@@ -523,6 +524,7 @@ public class Driver
             exception.setStackTrace(interrupterStack.stream().toArray(StackTraceElement[]::new));
             PrestoException newException = new PrestoException(GENERIC_INTERNAL_ERROR, "Driver was interrupted", exception);
             newException.addSuppressed(t);
+            log.error(newException, "Failing Driver");
             driverContext.failed(newException);
             throw newException;
         }

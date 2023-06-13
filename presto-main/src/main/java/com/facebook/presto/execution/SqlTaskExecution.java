@@ -14,6 +14,7 @@
 package com.facebook.presto.execution;
 
 import com.facebook.airlift.concurrent.SetThreadName;
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.event.SplitMonitor;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.buffer.BufferState;
@@ -141,6 +142,7 @@ public class SqlTaskExecution
     private final Map<PlanNodeId, PendingSplitsForPlanNode> pendingSplitsByPlanNode;
 
     private final Status status;
+    private static final Logger log = Logger.get(SqlTaskExecution.class);
 
     static SqlTaskExecution createSqlTaskExecution(
             TaskStateMachine taskStateMachine,
@@ -267,6 +269,7 @@ public class SqlTaskExecution
                 getMaxDriversPerTask(taskContext.getSession()));
         taskStateMachine.addStateChangeListener(state -> {
             if (state.isDone()) {
+                log.info("State {} is done and removing task {}", state, taskHandle);
                 taskExecutor.removeTask(taskHandle);
                 for (DriverFactory factory : localExecutionPlan.getDriverFactories()) {
                     factory.noMoreDrivers();
