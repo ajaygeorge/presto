@@ -33,6 +33,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.facebook.presto.execution.QueryState.FINISHED;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
@@ -166,10 +167,10 @@ public class TestGracefulShutdown
                 //log.info("Waiting for graceful shutdown to be completed, queued driver=%s, running driver=%s, blocked drivers=%s", getQueuedDrivers(taskManager), getRunningDrivers(taskManager), getBlockedDrivers(taskManager));
                 MILLISECONDS.sleep(100);
             }
-            //long pendingSplits = worker.getGracefulShutdownSplitTracker().getPendingSplits().values().stream().mapToLong(Set::size).sum();
+            long pendingSplits = worker.getGracefulShutdownSplitTracker().getPendingSplits().values().stream().mapToLong(Set::size).sum();
             //log.info("queued driver=%s, running driver=%s, blocked drivers=%s", getQueuedDrivers(taskManager), getRunningDrivers(taskManager), getBlockedDrivers(taskManager));
             //assertEquals(getCompletedSplits(taskManager), getCompletedDrivers(taskManager));
-            //assertEquals(pendingSplits, getQueuedDrivers(taskManager));
+            assertEquals(pendingSplits, getQueuedDrivers(taskManager));
         }
     }
 

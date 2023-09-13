@@ -29,8 +29,10 @@ import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
@@ -365,7 +367,7 @@ public class TestTaskExecutor
                 taskExecutor.enqueueSplits(taskHandle, false, ImmutableList.of(driver));
             }
             new Thread(() -> taskExecutor.gracefulShutdown()).start();
-            while (!taskExecutor.isShuttingDownStarted()) {
+            while (!taskExecutor.isShuttingDown()) {
                 MILLISECONDS.sleep(500);
             }
             assertEquals(taskHandle.getRunningLeafSplits(), 4);
@@ -373,6 +375,12 @@ public class TestTaskExecutor
             // let the split continue to run
             beginPhase.arriveAndDeregister();
             verificationComplete.arriveAndDeregister();
+            Collection<Set<Long>> pendingSplits = gracefulShutdownSplitTracker.getPendingSplits().values();
+            System.out.println(pendingSplits);
+            assertEquals(pendingSplits
+                    .stream()
+                    .mapToInt(Set::size)
+                    .sum(), 26);
         }
         finally {
             taskExecutor.stop();
