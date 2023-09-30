@@ -603,7 +603,7 @@ public class TaskExecutor
         try (SetThreadName ignored = new SetThreadName("Task-%s", taskHandle.getTaskId())) {
             doRemoveTask(taskHandle);
             log.warn("Wiping all pending split state for task %s", taskHandle.getTaskId());
-            //gracefulShutdownSplitTracker.getPendingSplits().remove(taskHandle.getTaskId());
+            gracefulShutdownSplitTracker.getPendingSplits().remove(taskHandle.getTaskId());
         }
         // replace blocked splits that were terminated
         addNewEntrants();
