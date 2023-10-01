@@ -14,13 +14,8 @@
 package com.facebook.presto.execution.executor;
 
 import com.facebook.airlift.node.NodeInfo;
-import com.facebook.presto.execution.TaskId;
 
 import javax.inject.Inject;
-
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,13 +30,15 @@ public class GracefulShutdownSplitTracker
         //this.nodePoolType = requireNonNull(serverConfig.getPoolType(), "pool type is null");
         this.nodeID = requireNonNull(nodeInfo, "nodeInfo is null").getNodeId();
     }
-
+    /*
+     Added for debugging pending splits
     private ConcurrentMap<TaskId, Set<Long>> pendingSplits = new ConcurrentHashMap<>();
 
     public ConcurrentMap<TaskId, Set<Long>> getPendingSplits()
     {
         return pendingSplits;
     }
+    */
 
     public String getNodeID()
     {

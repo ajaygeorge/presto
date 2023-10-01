@@ -577,13 +577,10 @@ public class SqlTaskExecution
                         checkTaskCompletion();
 
                         if (result != null) {
-                            log.warn("Marking split %s as completed for task %s", result, taskId);
                             taskContext.addCompletedSplit(result);
-                            splitMonitor.splitCompletedEvent(taskId, getDriverStats(), result);
                         }
-                        else {
-                            splitMonitor.splitCompletedEvent(taskId, getDriverStats());
-                        }
+
+                        splitMonitor.splitCompletedEvent(taskId, getDriverStats());
                     }
                 }
 

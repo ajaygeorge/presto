@@ -14,7 +14,6 @@
 package com.facebook.presto.execution;
 
 import com.facebook.airlift.json.JsonObjectMapperProvider;
-import com.facebook.airlift.node.NodeInfo;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.block.BlockEncodingManager;
 import com.facebook.presto.common.predicate.TupleDomain;
@@ -23,7 +22,6 @@ import com.facebook.presto.dispatcher.NoOpQueryManager;
 import com.facebook.presto.event.SplitMonitor;
 import com.facebook.presto.eventlistener.EventListenerManager;
 import com.facebook.presto.execution.buffer.OutputBuffers;
-import com.facebook.presto.execution.executor.GracefulShutdownSplitTracker;
 import com.facebook.presto.execution.scheduler.LegacyNetworkTopology;
 import com.facebook.presto.execution.scheduler.NodeScheduler;
 import com.facebook.presto.execution.scheduler.NodeSchedulerConfig;
@@ -203,8 +201,7 @@ public final class TaskTestUtils
     {
         return new SplitMonitor(
                 new EventListenerManager(),
-                new JsonObjectMapperProvider().get(),
-                new GracefulShutdownSplitTracker(new NodeInfo("test")));
+                new JsonObjectMapperProvider().get());
     }
 
     public static QueryStateMachine createQueryStateMachine(

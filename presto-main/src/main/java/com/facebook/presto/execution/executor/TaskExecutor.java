@@ -307,15 +307,7 @@ public class TaskExecutor
                             }
                             outputBufferEmptyWaitTime.add(Duration.nanosSince(startTime));
                             logRunningWaitingAndBlockedSplits("Shutdown task " + taskId, taskId);
-                            Set<Long> pendingSplitSet = gracefulShutdownSplitTracker.getPendingSplits().get(taskId);
-                            long pendingSplit = 0L;
-                            if (pendingSplitSet != null) {
-                                pendingSplit = pendingSplitSet.size();
-                                log.warn("Number of pending splits to be retried for task %s is %s", taskId, pendingSplit);
-                                log.warn("Pending splits to be retried for task %s are %s", taskId, pendingSplitSet);
-                            }
                             TaskShutdownStats shuttingDownStats = builderWithOutputBufferInfo(OB_WAIT_OVER, shuttingdownNode, taskHandle.getOutputBuffer())
-                                    .setSplitsToBeRetried(pendingSplit)
                                     .setOutputBufferStage(OB_WAIT_OVER, System.nanoTime() - startTime)
                                     .build();
                             taskHandle.updateTaskShutdownState(shuttingDownStats);
@@ -602,8 +594,6 @@ public class TaskExecutor
     {
         try (SetThreadName ignored = new SetThreadName("Task-%s", taskHandle.getTaskId())) {
             doRemoveTask(taskHandle);
-            log.warn("Wiping all pending split state for task %s", taskHandle.getTaskId());
-            gracefulShutdownSplitTracker.getPendingSplits().remove(taskHandle.getTaskId());
         }
         // replace blocked splits that were terminated
         addNewEntrants();
@@ -649,10 +639,6 @@ public class TaskExecutor
                         globalScheduledTimeMicros,
                         blockedQuantaWallTime,
                         unblockedQuantaWallTime);
-                if (taskSplit.getScheduledSplit() != null) {
-                    log.warn("Adding split %s to pending split tracker for task %s", taskSplit.getScheduledSplit().getSequenceId(), taskHandle.getTaskId());
-                    gracefulShutdownSplitTracker.getPendingSplits().computeIfAbsent(taskHandle.getTaskId(), k -> ConcurrentHashMap.newKeySet()).add(taskSplit.getScheduledSplit().getSequenceId());
-                }
                 if (intermediate) {
                     // add the runner to the handle so it can be destroyed if the task is canceled
                     if (taskHandle.recordIntermediateSplit(prioritizedSplitRunner)) {
