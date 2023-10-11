@@ -635,6 +635,11 @@ public class SqlTaskExecution
         return noMoreSplits.build();
     }
 
+    public boolean isTaskIdling()
+    {
+        return taskHandle.isTaskIdling();
+    }
+
     private synchronized void checkTaskCompletion()
     {
         if (taskStateMachine.getState().isDone()) {
@@ -660,12 +665,10 @@ public class SqlTaskExecution
             return;
         }
 
-        if (taskHandle.isShutdownInProgress()) {
-            return;
+        if (!taskHandle.isShutdownInProgress()) {
+            // Cool! All done!
+            taskStateMachine.finished();
         }
-
-        // Cool! All done!
-        taskStateMachine.finished();
     }
 
     @Override
