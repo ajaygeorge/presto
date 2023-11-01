@@ -52,7 +52,7 @@ public class QueryManagerConfig
     private ExchangeMaterializationStrategy exchangeMaterializationStrategy = ExchangeMaterializationStrategy.NONE;
     private boolean useStreamingExchangeForMarkDistinct;
     private boolean enableWorkerIsolation = true;
-    private boolean enableRetryForFailedSplits = true;
+    private boolean enableRetryForFailedSplits;
     private Duration minQueryExpireAge = new Duration(15, TimeUnit.MINUTES);
     private int maxQueryHistory = 100;
     private int maxQueryLength = 1_000_000;
