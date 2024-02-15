@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -71,6 +72,7 @@ public class BackgroundHiveSplitLoader
     public BackgroundHiveSplitLoader(
             Table table,
             Iterable<HivePartitionMetadata> partitions,
+            OptionalInt totalPartitions,
             Optional<Domain> pathDomain,
             Optional<BucketSplitInfo> tableBucketInfo,
             ConnectorSession session,
@@ -86,7 +88,7 @@ public class BackgroundHiveSplitLoader
         this.loaderConcurrency = loaderConcurrency;
         checkArgument(loaderConcurrency > 0, "loaderConcurrency must be > 0, found: %s", loaderConcurrency);
         this.executor = requireNonNull(executor, "executor is null");
-        this.partitions = new ConcurrentLazyQueue<>(requireNonNull(partitions, "partitions is null"));
+        this.partitions = new ConcurrentLazyQueue<>(requireNonNull(partitions, "partitions is null"), totalPartitions);
         this.delegatingPartitionLoader = new DelegatingPartitionLoader(table, pathDomain, tableBucketInfo, session, hdfsEnvironment, namenodeStats, directoryLister, fileIterators, recursiveDirWalkerEnabled, schedulerUsesHostAddresses, partialAggregationsPushedDown);
     }
 

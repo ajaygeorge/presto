@@ -60,6 +60,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -523,6 +524,7 @@ public class TestBackgroundHiveSplitLoader
         return new BackgroundHiveSplitLoader(
                 table,
                 hivePartitionMetadatas,
+                OptionalInt.empty(),
                 pathDomain,
                 createBucketSplitInfo(bucketHandle, hiveBucketFilter),
                 connectorSession,
@@ -554,9 +556,11 @@ public class TestBackgroundHiveSplitLoader
                                 .setFileStatusCacheTables(fileStatusCacheTables),
                         new HiveCommonClientConfig()));
 
+        List<HivePartitionMetadata> partitions = samplePartitionMetadatas();
         return new BackgroundHiveSplitLoader(
                 SIMPLE_TABLE,
-                samplePartitionMetadatas(),
+                partitions,
+                OptionalInt.empty(),
                 Optional.empty(),
                 createBucketSplitInfo(Optional.empty(), Optional.empty()),
                 connectorSession,
@@ -579,6 +583,7 @@ public class TestBackgroundHiveSplitLoader
         return new BackgroundHiveSplitLoader(
                 SIMPLE_TABLE,
                 createPartitionMetadataWithOfflinePartitions(),
+                OptionalInt.empty(),
                 Optional.empty(),
                 createBucketSplitInfo(Optional.empty(), Optional.empty()),
                 connectorSession,

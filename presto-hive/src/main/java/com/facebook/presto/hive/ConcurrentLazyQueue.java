@@ -16,27 +16,39 @@ package com.facebook.presto.hive;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.util.Iterator;
+import java.util.OptionalInt;
 
 public class ConcurrentLazyQueue<E>
 {
     @GuardedBy("this")
     private final Iterator<E> iterator;
+    private volatile int size;
 
-    public ConcurrentLazyQueue(Iterable<E> iterable)
+    public ConcurrentLazyQueue(Iterable<E> iterable, OptionalInt size)
     {
         this.iterator = iterable.iterator();
+        this.size = size.orElse(-1);
     }
 
     public synchronized boolean isEmpty()
     {
-        return !iterator.hasNext();
+        if (size >= 0) {
+            return size == 0;
+        }
+        else {
+            return !iterator.hasNext();
+        }
     }
 
     public synchronized E poll()
     {
-        if (!iterator.hasNext()) {
-            return null;
+        if (iterator.hasNext()) {
+            E next = iterator.next();
+            if (size > 0) {
+                size--;
+            }
+            return next;
         }
-        return iterator.next();
+        return null;
     }
 }
