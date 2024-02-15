@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.hive.cache.HiveCachingHdfsConfiguration;
 import com.facebook.presto.hive.filesystem.ExtendedFileSystem;
@@ -111,6 +112,7 @@ public class StoragePartitionLoader
     private final Deque<Iterator<InternalHiveSplit>> fileIterators;
     private final boolean schedulerUsesHostAddresses;
     private final boolean partialAggregationsPushedDown;
+    private static final Logger log = Logger.get(StoragePartitionLoader.class);
 
     public StoragePartitionLoader(
             Table table,
@@ -334,7 +336,9 @@ public class StoragePartitionLoader
             return hiveSplitSource.addToQueue(getBucketedSplits(path, fs, splitFactory, tableBucketInfo.get(), bucketConversion, partitionName, partition.getPartition(), splittable));
         }
 
-        fileIterators.addLast(createInternalHiveSplitIterator(path, fs, splitFactory, splittable, partition.getPartition()));
+        Iterator<InternalHiveSplit> internalHiveSplitIterator = createInternalHiveSplitIterator(path, fs, splitFactory, splittable, partition.getPartition());
+        log.info(format("Added 1 elem to fileIterators with partition=%s", partition.getPartition().map(Partition::toString)));
+        fileIterators.addLast(internalHiveSplitIterator);
         return COMPLETED_FUTURE;
     }
 

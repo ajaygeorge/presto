@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.hive.StoragePartitionLoader.BucketSplitInfo;
 import com.facebook.presto.hive.metastore.Table;
@@ -36,11 +37,13 @@ import static com.facebook.presto.hive.HiveErrorCode.HIVE_UNKNOWN_ERROR;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class BackgroundHiveSplitLoader
         implements HiveSplitLoader
 {
+    private static final Logger log = Logger.get(BackgroundHiveSplitLoader.class);
     private static final ListenableFuture<?> COMPLETED_FUTURE = immediateFuture(null);
 
     private final int loaderConcurrency;
@@ -113,13 +116,17 @@ public class BackgroundHiveSplitLoader
         @Override
         public ResumableTaskStatus process()
         {
+            int count = 0;
             while (true) {
                 if (stopped) {
+                    log.info("LoadSplits Stopped after Iteration #" + count);
                     return ResumableTaskStatus.finished();
                 }
                 ListenableFuture<?> future;
                 taskExecutionLock.readLock().lock();
                 try {
+                    count++;
+                    log.info("LoadSplits Iteration #" + count);
                     future = loadSplits();
                 }
                 catch (Exception e) {
@@ -140,6 +147,7 @@ public class BackgroundHiveSplitLoader
                 }
                 invokeNoMoreSplitsIfNecessary();
                 if (!future.isDone()) {
+                    log.info("LoadSplits Future not done Iteration #" + count);
                     return ResumableTaskStatus.continueOn(future);
                 }
             }
@@ -187,16 +195,24 @@ public class BackgroundHiveSplitLoader
     {
         Iterator<InternalHiveSplit> splits = fileIterators.poll();
         if (splits == null) {
+            log.info("fileIterators is empty");
             HivePartitionMetadata partition = partitions.poll();
             if (partition == null) {
+                log.info("partition is empty");
                 return COMPLETED_FUTURE;
             }
-            return delegatingPartitionLoader.loadPartition(partition, hiveSplitSource, stopped);
+            log.info(format("Calling loadPartition for %s", partition.getHivePartition()));
+            ListenableFuture<?> listenableFuture = delegatingPartitionLoader.loadPartition(partition, hiveSplitSource, stopped);
+            log.info(format("fileIterators size after loadPartition for %s =%d", partition.getHivePartition(), fileIterators.size()));
+            return listenableFuture;
         }
 
         while (splits.hasNext() && !stopped) {
-            ListenableFuture<?> future = hiveSplitSource.addToQueue(splits.next());
+            InternalHiveSplit split = splits.next();
+            log.info(format("Adding split to hiveSplitSource. partition=%s split=%s", split.getPartitionName(), split.getPath()));
+            ListenableFuture<?> future = hiveSplitSource.addToQueue(split);
             if (!future.isDone()) {
+                log.info(format("Split is not done. Adding back to fileIterators. partition=%s split=%s", split.getPartitionName(), split.getPath()));
                 fileIterators.addFirst(splits);
                 return future;
             }

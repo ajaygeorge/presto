@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.hive.StoragePartitionLoader.BucketSplitInfo;
 import com.facebook.presto.hive.metastore.Partition;
@@ -36,6 +37,7 @@ public class DelegatingPartitionLoader
     private final ConnectorSession session;
     private final PartitionLoader storagePartitionLoader;
     private final PartitionLoader manifestPartitionLoader;
+    private static final Logger log = Logger.get(DelegatingPartitionLoader.class);
 
     public DelegatingPartitionLoader(
             Table table,
@@ -72,9 +74,11 @@ public class DelegatingPartitionLoader
     {
         if (isListFilesLoadedPartition(session, partition.getPartition())) {
             // Partition has list of file names and sizes. We can avoid the listFiles() call to underlying storage.
+            log.info("Using Manifest Partition Loader");
             return manifestPartitionLoader.loadPartition(partition, hiveSplitSource, stopped);
         }
 
+        log.info("Using Storage Partition Loader");
         return storagePartitionLoader.loadPartition(partition, hiveSplitSource, stopped);
     }
 
