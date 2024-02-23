@@ -14,6 +14,7 @@
 package com.facebook.presto.hive;
 
 import com.facebook.airlift.concurrent.BoundedExecutor;
+import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.CounterStat;
 import com.facebook.presto.common.Subfield;
 import com.facebook.presto.common.predicate.Domain;
@@ -75,6 +76,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.facebook.presto.common.type.Decimals.encodeScaledValue;
@@ -143,6 +145,7 @@ public class HiveSplitManager
     private final CacheQuotaRequirementProvider cacheQuotaRequirementProvider;
     private final HiveEncryptionInformationProvider encryptionInformationProvider;
     private final PartitionSkippabilityChecker partitionSkippabilityChecker;
+    private static final Logger log = Logger.get(HiveSplitManager.class);
 
     @Inject
     public HiveSplitManager(
@@ -672,6 +675,7 @@ public class HiveSplitManager
             Optional<Map<Subfield, Domain>> domains)
     {
         MetastoreContext metastoreContext = new MetastoreContext(session.getIdentity(), session.getQueryId(), session.getClientInfo(), session.getSource(), getMetastoreHeaders(session), isUserDefinedTypeEncodingEnabled(session), metastore.getColumnConverterProvider(), session.getWarningCollector(), session.getRuntimeStats());
+        log.info(format("Calling getPartitionsByNames with numPartitions=%d , args %s:%s:%s", partitionBatch.size(), tableName.getSchemaName(), tableName.getTableName(), partitionBatch.stream().map(HivePartition::toString).collect(Collectors.joining(", "))));
         Map<String, Optional<Partition>> partitions = metastore.getPartitionsByNames(
                 metastoreContext,
                 tableName.getSchemaName(),

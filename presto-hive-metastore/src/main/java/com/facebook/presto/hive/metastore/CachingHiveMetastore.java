@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive.metastore;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.hive.ForCachingHiveMetastore;
@@ -24,8 +25,10 @@ import com.facebook.presto.spi.constraints.TableConstraint;
 import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.RoleGrant;
 import com.facebook.presto.spi.statistics.ColumnStatisticType;
+import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -108,6 +111,7 @@ public class CachingHiveMetastore
     private final boolean partitionVersioningEnabled;
     private final double partitionCacheValidationPercentage;
     private final int partitionCacheColumnCountLimit;
+    private static final Logger log = Logger.get(CachingHiveMetastore.class);
 
     @Inject
     public CachingHiveMetastore(
@@ -293,6 +297,7 @@ public class CachingHiveMetastore
                     }
                 }, executor));
         metastoreCacheStats.setPartitionCache(partitionCache);
+        log.info(format("Creating partitionCache with expiration=%s, refresh=%s, maxSize=%s hashCode=%s", partitionCacheExpiresAfterWriteMillis, partitionCacheRefreshMills, partitionCacheMaxSize, partitionCache.hashCode()));
 
         tablePrivilegesCache = newCacheBuilder(cacheExpiresAfterWriteMillis, cacheRefreshMills, cacheMaxSize)
                 .build(asyncReloading(CacheLoader.from(this::loadTablePrivileges), executor));
@@ -336,7 +341,14 @@ public class CachingHiveMetastore
     private static <K, V> Map<K, V> getAll(LoadingCache<K, V> cache, Iterable<K> keys)
     {
         try {
-            return cache.getAll(keys);
+            CacheStats statsBefore = cache.stats();
+            log.info(format("Before hitCount=%d, missCount=%d, loadSuccessCount=%d, loadExceptionCount=%d", statsBefore.hitCount(), statsBefore.missCount(), statsBefore.loadSuccessCount(), statsBefore.loadExceptionCount()));
+            ImmutableMap<K, V> all = cache.getAll(keys);
+            //Log Callsite
+            log.info(Throwables.getStackTraceAsString(new RuntimeException("Kash")));
+            CacheStats statsAfter = cache.stats();
+            log.info(format("After hitCount=%d, missCount=%d, loadSuccessCount=%d, loadExceptionCount=%d", statsAfter.hitCount(), statsAfter.missCount(), statsAfter.loadSuccessCount(), statsAfter.loadExceptionCount()));
+            return all;
         }
         catch (ExecutionException | UncheckedExecutionException e) {
             throwIfInstanceOf(e.getCause(), PrestoException.class);

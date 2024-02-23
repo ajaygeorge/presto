@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.facebook.presto.hive.HiveErrorCode.HIVE_FILESYSTEM_ERROR;
@@ -70,6 +71,7 @@ public class BackgroundHiveSplitLoader
 
     private HiveSplitSource hiveSplitSource;
     private volatile boolean stopped;
+    private AtomicInteger count = new AtomicInteger(0);
 
     public BackgroundHiveSplitLoader(
             Table table,
@@ -124,6 +126,7 @@ public class BackgroundHiveSplitLoader
                 taskExecutionLock.readLock().lock();
                 try {
                     count++;
+                    log.info("*#*+#*#*+#*#*+#*#*+#*#*+#*#*+#*#*+#*#*+#*#*+#*#*+#*#*+");
                     log.info("LoadSplits Iteration #" + count);
                     future = loadSplits();
                 }
@@ -143,6 +146,7 @@ public class BackgroundHiveSplitLoader
                 finally {
                     taskExecutionLock.readLock().unlock();
                 }
+                log.info("invokeNoMoreSplitsIfNecessary Iteration #" + count);
                 invokeNoMoreSplitsIfNecessary();
                 if (!future.isDone()) {
                     log.info("LoadSplits Future not done Iteration #" + count);
@@ -158,6 +162,7 @@ public class BackgroundHiveSplitLoader
         try {
             // This is an opportunistic check to avoid getting the write lock unnecessarily
             if (!partitions.isEmpty() || !fileIterators.isEmpty()) {
+                log.info("ReadLock exit for invokeNoMoreSplitsIfNecessary");
                 return;
             }
         }
@@ -173,6 +178,7 @@ public class BackgroundHiveSplitLoader
         taskExecutionLock.writeLock().lock();
         try {
             // the write lock guarantees that no one is operating on the partitions, fileIterators, or hiveSplitSource, or half way through doing so.
+            log.info("invokeNoMoreSplitsIfNecessary Partition Poll Count=" + count.get());
             if (partitions.isEmpty() && fileIterators.isEmpty()) {
                 // It is legal to call `noMoreSplits` multiple times or after `stop` was called.
                 // Nothing bad will happen if `noMoreSplits` implementation calls methods that will try to obtain a read lock because the lock is re-entrant.
@@ -186,6 +192,7 @@ public class BackgroundHiveSplitLoader
         finally {
             taskExecutionLock.writeLock().unlock();
         }
+        log.info("WriteLock exit for invokeNoMoreSplitsIfNecessary");
     }
 
     private ListenableFuture<?> loadSplits()
@@ -196,13 +203,19 @@ public class BackgroundHiveSplitLoader
             log.info("fileIterators is empty");
             HivePartitionMetadata partition = partitions.poll();
             if (partition == null) {
-                log.info("partition is empty");
+                log.info("partition is empty. ConcurrentLazyQueue returned immediately");
                 return COMPLETED_FUTURE;
+            }
+            else {
+                log.info("loadSplits Partition Poll Count=" + count.incrementAndGet());
             }
             log.info(format("Calling loadPartition for %s", partition.getHivePartition()));
             ListenableFuture<?> listenableFuture = delegatingPartitionLoader.loadPartition(partition, hiveSplitSource, stopped);
             log.info(format("fileIterators size after loadPartition for %s =%d", partition.getHivePartition(), fileIterators.size()));
             return listenableFuture;
+        }
+        else {
+            log.info("fileIterators is not empty");
         }
 
         while (splits.hasNext() && !stopped) {
