@@ -32,6 +32,7 @@ import javax.inject.Inject;
 
 import java.util.function.Supplier;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class HiveMetadataFactory
@@ -217,9 +218,12 @@ public class HiveMetadataFactory
     @Override
     public HiveMetadata get()
     {
+        // per-transaction cache
+        CachingHiveMetastore cachingHiveMetastore = CachingHiveMetastore.memoizeMetastore(this.metastore, metastoreImpersonationEnabled, perTransactionCacheMaximumSize, metastorePartitionCacheMaxColumnCount);
+        log.info(format("HiveMetadataFactory :: ExtendedHiveMetastore class is %s and hash is %s. CachingHiveMetastore hash is %s", this.metastore.getClass(), this.metastore.hashCode(), cachingHiveMetastore.hashCode()));
         SemiTransactionalHiveMetastore metastore = new SemiTransactionalHiveMetastore(
                 hdfsEnvironment,
-                CachingHiveMetastore.memoizeMetastore(this.metastore, metastoreImpersonationEnabled, perTransactionCacheMaximumSize, metastorePartitionCacheMaxColumnCount), // per-transaction cache
+                cachingHiveMetastore,
                 fileRenameExecutor,
                 skipDeletionForAlter,
                 skipTargetCleanupOnRollback,

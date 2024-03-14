@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive.metastore;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.hive.ForCachingHiveMetastore;
 import com.facebook.presto.hive.HiveTableHandle;
@@ -96,6 +97,7 @@ public class InMemoryMetastoreCache
 
     private final ExtendedHiveMetastore delegate;
     private final MetastoreCacheStats metastoreCacheStats;
+    private static final Logger log = Logger.get(InMemoryMetastoreCache.class);
 
     @Inject
     public InMemoryMetastoreCache(
@@ -131,6 +133,7 @@ public class InMemoryMetastoreCache
             int partitionCacheColumnCountLimit,
             MetastoreCacheStats metastoreCacheStats)
     {
+        log.info(format("InMemoryMetastoreCache Constructor :: ExtendedHiveMetastore class is %s:%s", delegate.getClass(), delegate.hashCode()));
         this.delegate = requireNonNull(delegate, "delegate is null");
         requireNonNull(executor, "executor is null");
         this.metastoreImpersonationEnabled = metastoreImpersonationEnabled;
@@ -780,6 +783,7 @@ public class InMemoryMetastoreCache
         }
 
         ImmutableMap.Builder<KeyAndContext<HivePartitionName>, Optional<Partition>> partitions = ImmutableMap.builder();
+        log.info(format("ExtendedHiveMetastore class for getPartitionsByNames is %s:%s. InMemoryMetastoreCache hash is %s ", delegate.getClass(), delegate.hashCode(), this.hashCode()));
         Map<String, Optional<Partition>> partitionsByNames = delegate.getPartitionsByNames(firstPartitionKey.getContext(), databaseName, tableName, partitionsToFetch);
         for (Map.Entry<String, Optional<Partition>> entry : partitionsByNames.entrySet()) {
             partitions.put(getCachingKey(firstPartitionKey.getContext(), HivePartitionName.hivePartitionName(hiveTableName, entry.getKey())), entry.getValue());

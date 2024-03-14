@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive.metastore;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.hive.ForCachingHiveMetastore;
@@ -38,6 +39,7 @@ import java.util.function.Function;
 import static com.facebook.presto.hive.metastore.CachingHiveMetastore.MetastoreCacheScope.ALL;
 import static com.facebook.presto.hive.metastore.NoopMetastoreCacheStats.NOOP_METASTORE_CACHE_STATS;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -47,6 +49,7 @@ import static java.util.Objects.requireNonNull;
 public class CachingHiveMetastore
         implements ExtendedHiveMetastore
 {
+    private static final Logger log = Logger.get(CachingHiveMetastore.class);
     public enum MetastoreCacheScope
     {
         ALL, PARTITION
@@ -64,22 +67,24 @@ public class CachingHiveMetastore
         this.metastoreCache = requireNonNull(metastoreCache, "metastoreCache is null");
     }
 
-    public static CachingHiveMetastore memoizeMetastore(ExtendedHiveMetastore delegate, boolean isMetastoreImpersonationEnabled, long maximumSize, int partitionCacheMaxColumnCount)
+    public static CachingHiveMetastore memoizeMetastore(ExtendedHiveMetastore extendedHiveMetastore, boolean isMetastoreImpersonationEnabled, long maximumSize, int partitionCacheMaxColumnCount)
     {
+        InMemoryMetastoreCache inMemoryMetastoreCache = new InMemoryMetastoreCache(
+                extendedHiveMetastore,
+                newDirectExecutorService(),
+                isMetastoreImpersonationEnabled,
+                OptionalLong.empty(),
+                OptionalLong.empty(),
+                maximumSize,
+                false,
+                ALL,
+                0.0,
+                partitionCacheMaxColumnCount,
+                NOOP_METASTORE_CACHE_STATS);
+        log.info(format("Delegate class is %s and hash is %s. InMemoryMetastoreCache hash is %s ", extendedHiveMetastore.getClass(), extendedHiveMetastore.hashCode(), inMemoryMetastoreCache.hashCode()));
         return new CachingHiveMetastore(
-                delegate,
-                new InMemoryMetastoreCache(
-                        delegate,
-                        newDirectExecutorService(),
-                        isMetastoreImpersonationEnabled,
-                        OptionalLong.empty(),
-                        OptionalLong.empty(),
-                        maximumSize,
-                        false,
-                        ALL,
-                        0.0,
-                        partitionCacheMaxColumnCount,
-                        NOOP_METASTORE_CACHE_STATS));
+                extendedHiveMetastore,
+                inMemoryMetastoreCache);
     }
 
     @Managed
@@ -329,6 +334,7 @@ public class CachingHiveMetastore
     @Override
     public Map<String, Optional<Partition>> getPartitionsByNames(MetastoreContext metastoreContext, String databaseName, String tableName, List<String> partitionNames)
     {
+        log.info(format("Cache class is %s:%s. CachingHiveMetastore hash is %s", metastoreCache.getClass(), metastoreCache.hashCode(), this.hashCode()));
         return metastoreCache.getPartitionsByNames(metastoreContext, databaseName, tableName, partitionNames);
     }
 
