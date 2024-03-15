@@ -217,6 +217,7 @@ public class HiveMetadataFactory
     @Override
     public HiveMetadata get()
     {
+        log.info("AGP Memoize delegate is " + this.metastore);
         SemiTransactionalHiveMetastore metastore = new SemiTransactionalHiveMetastore(
                 hdfsEnvironment,
                 CachingHiveMetastore.memoizeMetastore(this.metastore, metastoreImpersonationEnabled, perTransactionCacheMaximumSize, metastorePartitionCacheMaxColumnCount), // per-transaction cache

@@ -14,6 +14,7 @@
 package com.facebook.presto.hive.metastore;
 
 import com.facebook.airlift.configuration.AbstractConfigurationAwareModule;
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.hive.metastore.file.FileMetastoreModule;
 import com.facebook.presto.hive.metastore.glue.GlueMetastoreModule;
 import com.facebook.presto.hive.metastore.thrift.ThriftMetastoreModule;
@@ -29,6 +30,7 @@ public class HiveMetastoreModule
 {
     private final String connectorId;
     private final Optional<ExtendedHiveMetastore> metastore;
+    private static final Logger log = Logger.get(HiveMetastoreModule.class);
 
     public HiveMetastoreModule(String connectorId, Optional<ExtendedHiveMetastore> metastore)
     {
@@ -40,6 +42,7 @@ public class HiveMetastoreModule
     protected void setup(Binder binder)
     {
         if (metastore.isPresent()) {
+            log.info("AGP Metastore wired in is " + metastore.get());
             binder.bind(ExtendedHiveMetastore.class).toInstance(metastore.get());
         }
         else {
