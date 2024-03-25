@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive.metastore;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.hive.ForCachingHiveMetastore;
 import com.facebook.presto.hive.HiveTableHandle;
@@ -21,6 +22,7 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.constraints.TableConstraint;
 import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.RoleGrant;
+import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -96,6 +98,7 @@ public class InMemoryCachingHiveMetastore
     private final boolean partitionVersioningEnabled;
     private final double partitionCacheValidationPercentage;
     private final int partitionCacheColumnCountLimit;
+    private static final Logger log = Logger.get(InMemoryCachingHiveMetastore.class);
 
     @Inject
     public InMemoryCachingHiveMetastore(
@@ -371,6 +374,7 @@ public class InMemoryCachingHiveMetastore
     @Override
     public Optional<Table> getTable(MetastoreContext metastoreContext, HiveTableHandle hiveTableHandle)
     {
+        log.info(Throwables.getStackTraceAsString(new RuntimeException("Dummy")));
         return get(tableCache, getCachingKey(metastoreContext, hiveTableHandle));
     }
 
