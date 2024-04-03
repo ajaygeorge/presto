@@ -631,9 +631,11 @@ public class SemiTransactionalHiveMetastore
             case PRE_EXISTING_TABLE: {
                 Optional<List<PartitionNameWithVersion>> partitionNameResult;
                 if (!partitionPredicates.isEmpty()) {
+                    log.info("Invoking getPartitionNamesByFilter");
                     partitionNameResult = Optional.of(delegate.getPartitionNamesByFilter(metastoreContext, hiveTableHandle.getSchemaName(), hiveTableHandle.getTableName(), partitionPredicates));
                 }
                 else {
+                    log.info("Invoking getPartitionNames");
                     partitionNameResult = delegate.getPartitionNames(metastoreContext, hiveTableHandle.getSchemaName(), hiveTableHandle.getTableName()).map(MetastoreUtil::getPartitionsWithEmptyVersion);
                 }
                 if (!partitionNameResult.isPresent()) {

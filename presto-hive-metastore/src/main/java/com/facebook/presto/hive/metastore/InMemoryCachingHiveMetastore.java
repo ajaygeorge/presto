@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive.metastore;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.predicate.Domain;
 import com.facebook.presto.hive.ForCachingHiveMetastore;
 import com.facebook.presto.hive.HiveTableHandle;
@@ -97,6 +98,7 @@ public class InMemoryCachingHiveMetastore
     private final boolean partitionVersioningEnabled;
     private final double partitionCacheValidationPercentage;
     private final int partitionCacheColumnCountLimit;
+    private static final Logger log = Logger.get(InMemoryCachingHiveMetastore.class);
 
     @Inject
     public InMemoryCachingHiveMetastore(
@@ -591,9 +593,23 @@ public class InMemoryCachingHiveMetastore
             Map<Column, Domain> partitionPredicates)
     {
         if (partitionVersioningEnabled) {
-            return getPartitionNamesWithVersionByFilter(metastoreContext, databaseName, tableName, partitionPredicates);
+            log.info("PartitionNameWithVersion enabled");
+            List<PartitionNameWithVersion> partitionNamesWithVersionByFilter = getPartitionNamesWithVersionByFilter(metastoreContext, databaseName, tableName, partitionPredicates);
+            printPartitionVersions(partitionNamesWithVersionByFilter, "getPartitionNamesByFilter");
+            return partitionNamesWithVersionByFilter;
+        }
+        else {
+            log.info("PartitionNameWithVersion not enabled");
         }
         return get(partitionFilterCache, getCachingKey(metastoreContext, partitionFilter(databaseName, tableName, partitionPredicates)));
+    }
+
+    private static void printPartitionVersions(List<PartitionNameWithVersion> partitionNamesWithVersionByFilter, String callSite)
+    {
+        for (int i = 0; i < partitionNamesWithVersionByFilter.size(); i++) {
+            PartitionNameWithVersion partitionNameWithVersion = partitionNamesWithVersionByFilter.get(i);
+            log.info(callSite + " PartitionNameWithVersion #" + i + " " + partitionNameWithVersion);
+        }
     }
 
     private void invalidateStalePartitions(
@@ -678,6 +694,7 @@ public class InMemoryCachingHiveMetastore
     @Override
     public Map<String, Optional<Partition>> getPartitionsByNames(MetastoreContext metastoreContext, String databaseName, String tableName, List<PartitionNameWithVersion> partitionNames)
     {
+        printPartitionVersions(partitionNames, "getPartitionsByNames");
         Iterable<KeyAndContext<HivePartitionName>> names = transform(partitionNames, name -> getCachingKey(metastoreContext, HivePartitionName.hivePartitionName(databaseName, tableName, name)));
 
         Map<KeyAndContext<HivePartitionName>, Optional<Partition>> all = getAll(partitionCache, names);
